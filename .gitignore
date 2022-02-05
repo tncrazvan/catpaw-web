@@ -1,0 +1,13 @@
+/vendor/
+/tmp/
+/composer.lock
+/.vscode/
+/.settings/
+/nbproject/
+*.log
+*.exe
+*.pem
+/composer.phar
+/.history/
+/.idea/
+/.sessions/
