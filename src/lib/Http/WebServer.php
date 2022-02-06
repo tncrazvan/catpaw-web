@@ -38,6 +38,8 @@ use const SIGINT;
 
 class WebServer {
 
+	private static $started = false;
+
 	private const MARKDOWN = 0;
 	private const HTML     = 1;
 	private const OTHER    = 2;
@@ -46,6 +48,92 @@ class WebServer {
 	private static false|HttpServer $httpServer = false;
 
 	private function __construct() { }
+
+	
+	public static function start(
+		HttpConfiguration $config
+	): Promise {
+		return new LazyPromise(function() use ($config) {
+			if(self::$started) return;
+			self::$started = true;
+
+			Session::setOperations(
+				new FileSystemSessionOperations(
+					ttl      : 1_440,
+					dirname  : ".sessions",
+					keepAlive: false,
+				)
+			);
+
+
+			$config->mdp = new Parsedown();
+
+
+			if(!$config->logger)
+				die(Strings::red("Please specify a logger instance.\n"));
+
+			$invoker = new HttpInvoker(Session::getOperations());
+
+			$sockets = [];
+
+			if(!is_iterable($config->httpInterfaces))
+				$interfaces = [$config->httpInterfaces];
+			else
+				$interfaces = $config->httpInterfaces;
+
+
+			foreach($interfaces as $interface)
+				$sockets[] = Server::listen($interface);
+
+			if($config->pemCertificate) {
+				$context = (new BindContext)
+					->withTlsContext((new ServerTlsContext)
+										 ->withDefaultCertificate($config->pemCertificate));
+
+				if(!is_iterable($config->httpSecureInterfaces))
+					$secureInterfaces = [$config->httpSecureInterfaces??[]];
+				else
+					$secureInterfaces = $config->httpSecureInterfaces;
+
+				foreach($secureInterfaces as $interface)
+					if($interface)
+						$sockets[] = Server::listen($interface, $context);
+
+			} else if($config->httpSecureInterfaces && count($config->httpSecureInterfaces) > 0)
+				$config->logger->critical("Server could not bind to the secure network interfaces because no pem certificate has been provided.");
+
+			if(0 >= count($sockets)) {
+				$config->logger->error("At least one network interface must be provided in order to start the server.");
+				die();
+			}
+
+			$server = self::$httpServer = new HttpServer(
+				$sockets,
+				new CallableRequestHandler(
+					static fn(Request $request) => static::serve($config, $request, $invoker)
+				),
+				$config->logger
+			);
+
+			$server->setErrorHandler(new class implements \Amp\Http\Server\ErrorHandler {
+				public function handleError(int $statusCode, string $reason = null, Request $request = null): Promise {
+					return new LazyPromise(function() use ($statusCode, $reason, $request) {
+
+					});
+				}
+			});
+
+
+			yield $server->start();
+
+			Loop::onSignal(SIGINT, static function(string $watcherId) use ($server) {
+				Loop::cancel($watcherId);
+				yield $server->stop();
+				Loop::stop();
+				die(0);
+			});
+		});
+	}
 
 	public static function getHttpServer(): false|HttpServer {
 		return self::$httpServer;
@@ -189,89 +277,6 @@ class WebServer {
 				[],
 				''
 			);
-		});
-	}
-
-	public static function start(
-		HttpConfiguration $config
-	): Promise {
-		return new LazyPromise(function() use ($config) {
-
-			Session::setOperations(
-				new FileSystemSessionOperations(
-					ttl      : 1_440,
-					dirname  : ".sessions",
-					keepAlive: false,
-				)
-			);
-
-
-			$config->mdp = new Parsedown();
-
-
-			if(!$config->logger)
-				die(Strings::red("Please specify a logger instance.\n"));
-
-			$invoker = new HttpInvoker(Session::getOperations());
-
-			$sockets = [];
-
-			if(!is_iterable($config->httpInterfaces))
-				$interfaces = [$config->httpInterfaces];
-			else
-				$interfaces = $config->httpInterfaces;
-
-
-			foreach($interfaces as $interface)
-				$sockets[] = Server::listen($interface);
-
-			if($config->pemCertificate) {
-				$context = (new BindContext)
-					->withTlsContext((new ServerTlsContext)
-										 ->withDefaultCertificate($config->pemCertificate));
-
-				if(!is_iterable($config->httpSecureInterfaces))
-					$secureInterfaces = [$config->httpSecureInterfaces??[]];
-				else
-					$secureInterfaces = $config->httpSecureInterfaces;
-
-				foreach($secureInterfaces as $interface)
-					if($interface)
-						$sockets[] = Server::listen($interface, $context);
-
-			} else if($config->httpSecureInterfaces && count($config->httpSecureInterfaces) > 0)
-				$config->logger->critical("Server could not bind to the secure network interfaces because no pem certificate has been provided.");
-
-			if(0 >= count($sockets)) {
-				$config->logger->error("At least one network interface must be provided in order to start the server.");
-				die();
-			}
-
-			$server = self::$httpServer = new HttpServer(
-				$sockets,
-				new CallableRequestHandler(
-					static fn(Request $request) => static::serve($config, $request, $invoker)
-				),
-				$config->logger
-			);
-
-			$server->setErrorHandler(new class implements \Amp\Http\Server\ErrorHandler {
-				public function handleError(int $statusCode, string $reason = null, Request $request = null): Promise {
-					return new LazyPromise(function() use ($statusCode, $reason, $request) {
-
-					});
-				}
-			});
-
-
-			yield $server->start();
-
-			Loop::onSignal(SIGINT, static function(string $watcherId) use ($server) {
-				Loop::cancel($watcherId);
-				yield $server->stop();
-				Loop::stop();
-				die(0);
-			});
 		});
 	}
 

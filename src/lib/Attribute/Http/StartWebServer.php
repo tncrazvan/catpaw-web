@@ -11,6 +11,7 @@ use CatPaw\Attribute\Interface\AttributeInterface;
 use CatPaw\Attribute\Trait\CoreAttributeDefinition;
 use CatPaw\Web\Http\HttpConfiguration;
 use CatPaw\Web\Http\WebServer;
+use Psr\Log\LoggerInterface;
 
 #[Attribute]
 class StartWebServer implements AttributeInterface {
@@ -32,12 +33,12 @@ class StartWebServer implements AttributeInterface {
 		public bool               $showException = false,
 		public false|string       $pemCertificate = false,
 	) {
-
 	}
 
 	#[Entry]
-	public function main(HttpConfiguration $config): Promise {
-		return new LazyPromise(function() use($config) {
+	public function main(LoggerInterface $logger):Promise {
+		return new LazyPromise(function() use($logger){
+			$config = new HttpConfiguration();
 			if($this->pemCertificate)
 				$config->pemCertificate = new Certificate($this->pemCertificate);
 
@@ -46,7 +47,7 @@ class StartWebServer implements AttributeInterface {
 			$config->httpWebroot = $this->webroot;
 			$config->httpShowStackTrace = $this->showStackTrace;
 			$config->httpShowException = $this->showException;
-
+			$config->logger = $logger;
 			yield WebServer::start($config);
 		});
 	}
