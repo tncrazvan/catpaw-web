@@ -51,13 +51,6 @@
       "CatPaw\\Web\\": "src/lib/"
     }
   },
-  "autoload-dev": {
-    "psr-4": {
-      "Examples\\ApplicationScopedEntry\\": [
-        "examples/application-scoped-entry/lib/"
-      ]
-    }
-  },
   "require": {
     "php": "^8.0",
     "amphp/amp": "^2.6",
