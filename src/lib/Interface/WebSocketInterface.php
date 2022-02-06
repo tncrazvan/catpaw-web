@@ -1,6 +1,6 @@
 <?php
 
-namespace CatPaw\Tools\Helpers;
+namespace CatPaw\Utility\Helpers;
 
 use Amp\Websocket\Client;
 use Amp\Websocket\Message;

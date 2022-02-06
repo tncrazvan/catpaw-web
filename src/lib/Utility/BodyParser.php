@@ -2,7 +2,7 @@
 
 namespace CatPaw\Web\Utility;
 
-use CatPaw\Tools\Caster;
+use CatPaw\Utility\Caster;
 use Exception;
 use function json_decode;
 use function mb_parse_str;

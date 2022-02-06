@@ -6,12 +6,11 @@ use Amp\LazyPromise;
 use Amp\Promise;
 use Amp\Socket\Certificate;
 use Attribute;
-use CatPaw\Attributes\Entry;
-use CatPaw\Attributes\Interfaces\AttributeInterface;
-use CatPaw\Attributes\Traits\CoreAttributeDefinition;
-use CatPaw\Configs\MainConfiguration;
-use CatPaw\Web\HttpConfiguration;
-use CatPaw\Web\WebServer;
+use CatPaw\Attribute\Entry;
+use CatPaw\Attribute\Interface\AttributeInterface;
+use CatPaw\Attribute\Trait\CoreAttributeDefinition;
+use CatPaw\Web\Http\HttpConfiguration;
+use CatPaw\Web\Http\WebServer;
 
 #[Attribute]
 class StartWebServer implements AttributeInterface {

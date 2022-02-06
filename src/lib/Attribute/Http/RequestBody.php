@@ -7,8 +7,8 @@ use Amp\LazyPromise;
 use Amp\Producer;
 use Amp\Promise;
 use Attribute;
-use CatPaw\Attributes\Interfaces\AttributeInterface;
-use CatPaw\Attributes\Traits\CoreAttributeDefinition;
+use CatPaw\Attribute\Interface\AttributeInterface;
+use CatPaw\Attribute\Trait\CoreAttributeDefinition;
 use CatPaw\Web\Http\HttpContext;
 use CatPaw\Web\Utility\BodyParser;
 use Exception;
@@ -34,7 +34,8 @@ use ReflectionParameter;
 class RequestBody implements AttributeInterface {
 	use CoreAttributeDefinition;
 
-	public function onParameter(ReflectionParameter $reflection, mixed &$value, false|HttpContext $http): Promise {
+	public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
+		/** @var false|HttpContext $http */
 		return new LazyPromise(function() use (
 			$reflection,
 			&$value,

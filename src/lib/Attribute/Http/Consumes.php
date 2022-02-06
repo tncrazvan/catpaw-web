@@ -3,8 +3,8 @@
 namespace CatPaw\Web\Attribute\Http;
 
 use Attribute;
-use CatPaw\Attributes\Interfaces\AttributeInterface;
-use CatPaw\Attributes\Traits\CoreAttributeDefinition;
+use CatPaw\Attribute\Interface\AttributeInterface;
+use CatPaw\Attribute\Trait\CoreAttributeDefinition;
 
 /**
  * Attach to a function or method.

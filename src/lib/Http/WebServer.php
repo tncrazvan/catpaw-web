@@ -1,6 +1,6 @@
 <?php
 
-namespace CatPaw\Web;
+namespace CatPaw\Web\Http;
 
 use Amp\ByteStream\IteratorStream;
 use Amp\File\File;
@@ -17,16 +17,17 @@ use Amp\Socket\BindContext;
 use Amp\Socket\Server;
 use Amp\Socket\ServerTlsContext;
 use CatPaw\Utility\Strings;
-use CatPaw\Web\Attribute\Http\RequestHeader;
 use CatPaw\Web\Exception\InvalidByteRangeQueryException;
 use CatPaw\Web\Http\HttpInvoker;
-use CatPaw\Web\Http\Session;
+use CatPaw\Web\Attribute\Http\Session;
 use CatPaw\Web\Interface\ByteRangeWriterInterface;
 use CatPaw\Web\Service\ByteRangeService;
+use CatPaw\Web\Session\FileSystemSessionOperations;
 use CatPaw\Web\Utility\Mime;
 use CatPaw\Web\Utility\Route;
 use Exception;
 use Generator;
+use Parsedown;
 use Throwable;
 use function Amp\File\exists;
 use function Amp\File\getSize;
@@ -195,6 +196,19 @@ class WebServer {
 		HttpConfiguration $config
 	): Promise {
 		return new LazyPromise(function() use ($config) {
+
+			Session::setOperations(
+				new FileSystemSessionOperations(
+					ttl      : 1_440,
+					dirname  : ".sessions",
+					keepAlive: false,
+				)
+			);
+
+
+			$config->mdp = new Parsedown();
+
+
 			if(!$config->logger)
 				die(Strings::red("Please specify a logger instance.\n"));
 

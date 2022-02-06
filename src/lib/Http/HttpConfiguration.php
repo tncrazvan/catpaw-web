@@ -1,6 +1,6 @@
 <?php
 
-namespace CatPaw\Web;
+namespace CatPaw\Web\Http;
 
 use Amp\Socket\Certificate;
 use Closure;

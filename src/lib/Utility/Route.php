@@ -3,8 +3,8 @@
 namespace CatPaw\Web\Utility;
 
 use Amp\LazyPromise;
-use CatPaw\Attributes\Interfaces\AttributeInterface;
-use CatPaw\Tools\Strings;
+use CatPaw\Attribute\Interface\AttributeInterface;
+use CatPaw\Utility\Strings;
 use CatPaw\Web\Attribute\Http\PathParam;
 use CatPaw\Web\Http\RouteHandlerContext;
 use Closure;

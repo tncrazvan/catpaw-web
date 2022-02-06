@@ -5,8 +5,8 @@ namespace CatPaw\Web\Attribute\Http;
 use Amp\LazyPromise;
 use Amp\Promise;
 use Attribute;
-use CatPaw\Attributes\Interfaces\AttributeInterface;
-use CatPaw\Attributes\Traits\CoreAttributeDefinition;
+use CatPaw\Attribute\Interface\AttributeInterface;
+use CatPaw\Attribute\Trait\CoreAttributeDefinition;
 use CatPaw\Web\Http\HttpContext;
 use ReflectionParameter;
 
@@ -16,7 +16,8 @@ class RequestHeader implements AttributeInterface {
 
 	public function __construct(private string $key) { }
 
-	public function onParameter(ReflectionParameter $reflection, mixed &$value, false|HttpContext $http): Promise {
+	public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
+		/** @var false|HttpContext $http */
 		return new LazyPromise(function() use (
 			$reflection,
 			&$value,
