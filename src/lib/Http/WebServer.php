@@ -17,6 +17,7 @@ use Amp\Socket\BindContext;
 use Amp\Socket\Server;
 use Amp\Socket\ServerTlsContext;
 use CatPaw\Utility\Strings;
+use CatPaw\Web\Attribute\Http\RequestHeader;
 use CatPaw\Web\Exception\InvalidByteRangeQueryException;
 use CatPaw\Web\Http\HttpInvoker;
 use CatPaw\Web\Attribute\Http\Session;
@@ -56,6 +57,8 @@ class WebServer {
 		return new LazyPromise(function() use ($config) {
 			if(self::$started) return;
 			self::$started = true;
+
+			self::init($config);
 
 			Session::setOperations(
 				new FileSystemSessionOperations(
