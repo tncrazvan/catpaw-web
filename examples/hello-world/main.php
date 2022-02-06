@@ -3,7 +3,7 @@
 namespace {
 
 
-	use CatPaw\Web\Attribute\Http\StartWebServer;
+	use CatPaw\Web\Attribute\StartWebServer;
 	use CatPaw\Web\Utility\Route;
 
 	#[StartWebServer]

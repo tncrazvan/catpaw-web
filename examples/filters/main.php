@@ -4,8 +4,8 @@ namespace {
 
 	use Amp\Http\Server\Response;
 	use Amp\Http\Status;
-	use CatPaw\Web\Attribute\Http\PathParam;
-	use CatPaw\Web\Attribute\Http\StartWebServer;
+	use CatPaw\Web\Attribute\PathParam;
+	use CatPaw\Web\Attribute\StartWebServer;
 	use CatPaw\Web\Utility\Route;
 
 

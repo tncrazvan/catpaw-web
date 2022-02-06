@@ -5,7 +5,7 @@ namespace {
 	use Amp\Websocket\Client;
 	use Amp\Websocket\Message;
 	use Amp\Websocket\Server\Gateway;
-	use CatPaw\Web\Attribute\Http\StartWebServer;
+	use CatPaw\Web\Attribute\StartWebServer;
 	use CatPaw\Web\Interface\WebSocketInterface;
 	use CatPaw\Web\Utility\Route;
 	use Psr\Log\LoggerInterface;

@@ -3,9 +3,9 @@
 namespace {
 
 
-	use CatPaw\Web\Attribute\Http\Produces;
-	use CatPaw\Web\Attribute\Http\Session;
-	use CatPaw\Web\Attribute\Http\StartWebServer;
+	use CatPaw\Web\Attribute\Produces;
+	use CatPaw\Web\Attribute\Session;
+	use CatPaw\Web\Attribute\StartWebServer;
 	use CatPaw\Web\Utility\Route;
 
 	#[StartWebServer]

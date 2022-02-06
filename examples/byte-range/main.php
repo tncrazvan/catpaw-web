@@ -9,9 +9,9 @@ namespace {
 	use Amp\LazyPromise;
 	use Amp\Producer;
 	use Amp\Promise;
-	use CatPaw\Web\Attribute\Http\Produces;
-	use CatPaw\Web\Attribute\Http\RequestHeader;
-	use CatPaw\Web\Attribute\Http\StartWebServer;
+	use CatPaw\Web\Attribute\Produces;
+	use CatPaw\Web\Attribute\RequestHeader;
+	use CatPaw\Web\Attribute\StartWebServer;
 	use CatPaw\Web\Exception\InvalidByteRangeQueryException;
 	use CatPaw\Web\Interface\ByteRangeWriterInterface;
 	use CatPaw\Web\Service\ByteRangeService;
