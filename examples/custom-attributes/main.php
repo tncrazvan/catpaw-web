@@ -4,13 +4,11 @@ namespace {
 
 	use Amp\LazyPromise;
 	use Amp\Promise;
-	use CatPaw\Attribute\Http\Produces;
 	use CatPaw\Attribute\Interface\AttributeInterface;
-	use CatPaw\Attribute\StartWebServer;
 	use CatPaw\Attribute\Trait\CoreAttributeDefinition;
-	use CatPaw\Http\HttpContext;
-	use CatPaw\Http\RouteHandlerContext;
-	use CatPaw\Utility\Helpers\Route;
+	use CatPaw\Web\Attribute\Http\Produces;
+	use CatPaw\Web\Attribute\Http\StartWebServer;
+	use CatPaw\Web\Utility\Route;
 
 	#[Attribute]
 	class CustomHttpParameterAttribute implements AttributeInterface {

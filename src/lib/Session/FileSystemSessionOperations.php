@@ -5,7 +5,7 @@ namespace CatPaw\Web\Session;
 use Amp\File\File;
 use Amp\LazyPromise;
 use Amp\Promise;
-use CatPaw\Web\Http\Session;
+use CatPaw\Web\Attribute\Http\Session;
 use Throwable;
 use function Amp\File\createDirectoryRecursively;
 use function Amp\File\deleteFile;

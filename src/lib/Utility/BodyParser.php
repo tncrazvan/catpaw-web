@@ -3,17 +3,18 @@
 namespace CatPaw\Web\Utility;
 
 use CatPaw\Utility\Caster;
+use CatPaw\Web\Exception\ContentTypeRejectedException;
 use Exception;
 use function json_decode;
 use function mb_parse_str;
 
 class BodyParser {
 	/**
-	 * @throws Exception
+	 * @throws ContentTypeRejectedException
 	 */
 	public static function &parse(string $body, string $contentType, false|string $className = false, bool $toArray = false): mixed {
 		if('' === $contentType) {
-			throw new Exception("No Content-Type specified. Could not parse body.");
+			throw new ContentTypeRejectedException("No Content-Type specified. Could not parse body.");
 			//return $result;
 		} else if($className) {
 			if(str_starts_with($contentType, "application/x-www-form-urlencoded")) {
@@ -23,9 +24,7 @@ class BodyParser {
 			} else if(str_starts_with($contentType, "multipart/")) {
 				[$ok, $result] = FormData::parse($contentType, $body);
 			} else {
-				echo "No matching Content-Type ($contentType), falling back to null.\n";
-				$result = null;
-				return $result;
+				throw new ContentTypeRejectedException("No matching Content-Type ($contentType).");
 			}
 			$result = Caster::cast($result, $className);
 			return $result;

@@ -155,7 +155,12 @@ class Route {
 		array|Closure $callbacks,
 	): void {
 		if(self::$routes[$method][$path]??false) {
-			die(Strings::red("Overwriting handler [ $method $path ]\n"));
+			if(!str_starts_with($path, "@"))
+				die(Strings::red("Overwriting handler [ $method $path ]\n"));
+			else {
+				echo(Strings::yellow("Overwriting handler [ $method $path ]\n"));
+				self::$routes[$method][$path] = [];
+			}
 		}
 
 		if(!is_array($callbacks)) {

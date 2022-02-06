@@ -15,6 +15,7 @@ use Amp\Websocket\Server\Gateway;
 use Amp\Websocket\Server\Websocket;
 use CatPaw\Utility\Caster;
 use CatPaw\Utility\Factory;
+use CatPaw\Web\Exception\ContentTypeRejectedException;
 use CatPaw\Web\Interface\WebSocketInterface;
 use CatPaw\Utility\XMLSerializer;
 use CatPaw\Web\Attribute\Http\Consumes;
@@ -72,12 +73,15 @@ class HttpInvoker {
 		string  $httpRequestPath,
 		array   $httpRequestPathParameters,
 	): Generator {
+		/** @var HttpConfiguration $config */
+		$httpConfiguration = yield Factory::create(HttpConfiguration::class);
 		$httpRequestContentType = $httpRequest->getHeader("Content-Type")??'*/*';
 		$callbacks = Route::$routes[$httpRequestMethod][$httpRequestPath];
 		$len = count($callbacks);
 		for($i = 0; $i < $len; $i++) {
 			/** @var true|Response $response */
 			$response = yield from $this->next(
+				httpConfiguration        : $httpConfiguration,
 				httpRequest              : $httpRequest,
 				httpRequestMethod        : $httpRequestMethod,
 				httpRequestPath          : $httpRequestPath,
@@ -110,13 +114,14 @@ class HttpInvoker {
 	 * @throws Throwable
 	 */
 	private function next(
-		Request $httpRequest,
-		string  $httpRequestMethod,
-		string  $httpRequestPath,
-		array   $httpRequestPathParameters,
-		string  $httpRequestContentType,
-		Closure $callback,
-		bool    $isMiddleware
+		HttpConfiguration $httpConfiguration,
+		Request           $httpRequest,
+		string            $httpRequestMethod,
+		string            $httpRequestPath,
+		array             $httpRequestPathParameters,
+		string            $httpRequestContentType,
+		Closure           $callback,
+		bool              $isMiddleware
 	): Generator {
 		if(!isset($this->cache[$httpRequestMethod][$httpRequestPath])) {
 			$reflection = new ReflectionFunction($callback);
@@ -191,7 +196,19 @@ class HttpInvoker {
 		};
 
 		$parameters = [];
-		yield Factory::dependencies($reflection, $parameters, $http);
+		try {
+			yield Factory::dependencies($reflection, $parameters, $http);
+		} catch(ContentTypeRejectedException $e) {
+			$message = '';
+			if($httpConfiguration->httpShowExceptions) {
+				$message .= $e->getMessage();
+				if($httpConfiguration->httpShowStackTrace)
+					$message .= PHP_EOL.$e->getTraceAsString();
+			}
+			echo $e->getMessage().PHP_EOL.$e->getTraceAsString().PHP_EOL;
+			return new Response(Status::BAD_REQUEST, [], $message);
+		}
+
 
 		$value = $callback(...$parameters);
 
@@ -350,8 +367,8 @@ class HttpInvoker {
 			}
 		});
 
-		$websocket->onStart(CatPaw::getHttpServer());
-		$websocket->onStop(CatPaw::getHttpServer());
+		$websocket->onStart(WebServer::getHttpServer());
+		$websocket->onStop(WebServer::getHttpServer());
 
 		return $websocket;
 	}

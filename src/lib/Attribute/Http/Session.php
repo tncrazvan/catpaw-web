@@ -8,6 +8,7 @@ use Amp\Promise;
 use Attribute;
 use CatPaw\Attribute\Interface\AttributeInterface;
 use CatPaw\Attribute\Trait\CoreAttributeDefinition;
+use CatPaw\Web\Http\HttpContext;
 use CatPaw\Web\Session\SessionOperationsInterface;
 use JetBrains\PhpStorm\Pure;
 use ReflectionParameter;
@@ -95,6 +96,8 @@ class Session implements AttributeInterface {
 			$sessionIDCookie = $http->request->getCookie("session-id")??false;
 			$sessionID = $sessionIDCookie ? $sessionIDCookie->getValue() : '';
 			$session = yield $http->sessionOperations->validateSession(id: $sessionID);
+			if(!$session)
+				$session = yield $http->sessionOperations->startSession($sessionID);
 			if($sessionID !== $session->getId())
 				$http->response->setCookie(new ResponseCookie("session-id", $session->getId()));
 

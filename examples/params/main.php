@@ -2,9 +2,9 @@
 
 namespace {
 
-	use CatPaw\Attribute\Http\PathParam;
-	use CatPaw\Attribute\StartWebServer;
-	use CatPaw\Utility\Helpers\Route;
+	use CatPaw\Web\Attribute\Http\PathParam;
+	use CatPaw\Web\Attribute\Http\StartWebServer;
+	use CatPaw\Web\Utility\Route;
 
 	#[StartWebServer]
 	function main() {

@@ -20,8 +20,4 @@ class InvalidByteRangeQueryException extends Exception
 	public function __toString() {
 		return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
 	}
-
-	public function customFunction() {
-		echo "A custom function for this type of exception\n";
-	}
 }

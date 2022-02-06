@@ -28,7 +28,7 @@ class HttpConfiguration {
 	public bool $httpShowStackTrace = false;
 
 	/** @var bool This dictates if exceptions should be shown to the client whenever an Exception is caught or not. */
-	public bool $httpShowException = false;
+	public bool $httpShowExceptions = false;
 
 	/** @var Parsedown Markdown parser */
 	public Parsedown $mdp;

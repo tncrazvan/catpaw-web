@@ -15,26 +15,28 @@
   "scripts": {
     "load": "@composer dump-autoload -o",
     "script": "@php ./vendor/catpaw/core/scripts/start.php",
+    "start:example:hello-world": "@script examples/hello-world/main.php",
+    "dev:example:hello-world": "@start:example:hello-world dev 100 && @dev:example:hello-world",
     "start:example:cats": "@script examples/cats/main.php",
-    "dev:example:cats": "@script examples/cats/main.php dev 100 && @composer run dev",
+    "dev:example:cats": "@script examples/cats/main.php dev 100 && @dev:example:cats",
     "start:example:params": "@script examples/params/main.php",
-    "dev:example:params": "@script examples/params/main.php dev 100 && @composer run dev",
+    "dev:example:params": "@script examples/params/main.php dev 100 && @dev:example:params",
     "start:example:not-found": "@script examples/not-found/main.php",
-    "dev:example:not-found": "@script examples/not-found/main.php dev 100 && @composer run dev",
+    "dev:example:not-found": "@start:example:not-found dev 100 && @dev:example:not-found",
     "start:example:session": "@script examples/session/main.php",
-    "dev:example:session": "@script examples/session/main.php dev 100 && @composer run dev",
+    "dev:example:session": "@start:example:session dev 100 && @dev:example:session",
     "start:example:application-scoped-entry": "@script examples/application-scoped-entry/main.php",
-    "dev:example:application-scoped-entry": "@script examples/application-scoped-entry/main.php dev 100 && @composer run dev",
+    "dev:example:application-scoped-entry": "@start:example:application-scoped-entry dev 100 && @dev:example:application-scoped-entry",
     "start:example:modules": "@script examples/modules/main.php",
-    "dev:example:modules": "@script examples/modules/main.php dev 100 && @composer run dev",
+    "dev:example:modules": "@start:example:modules dev 100 && @dev:example:modules",
     "start:example:web-socket": "@script examples/web-socket/main.php",
-    "dev:example:web-socket": "@script examples/web-socket/main.php dev 100 && @composer run dev",
+    "dev:example:web-socket": "@start:example:web-socket dev 100 && @dev:example:web-socket",
     "start:example:byte-range": "@script examples/byte-range/main.php",
-    "dev:example:byte-range": "@script examples/byte-range/main.php dev 100 && @composer run dev",
+    "dev:example:byte-range": "@start:example:byte-range dev 100 && @dev:example:byte-range",
     "start:example:custom-attributes": "@script examples/custom-attributes/main.php",
-    "dev:example:custom-attributes": "@script examples/custom-attributes/main.php dev 100 && @composer run dev",
+    "dev:example:custom-attributes": "@start:example:custom-attributes dev 100 && @dev:example:custom-attributes",
     "start:example:filters": "@script examples/filters/main.php",
-    "dev:example:filters": "@script examples/filters/main.php dev 100 && @composer run dev"
+    "dev:example:filters": "@start:example:filters dev 100 && @dev:example:filters"
   },
   "authors": [
     {
@@ -53,9 +55,6 @@
     "psr-4": {
       "Examples\\ApplicationScopedEntry\\": [
         "examples/application-scoped-entry/lib/"
-      ],
-      "Examples\\Modules\\": [
-        "examples/modules/lib/"
       ]
     }
   },

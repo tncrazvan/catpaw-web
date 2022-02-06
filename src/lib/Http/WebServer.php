@@ -16,6 +16,7 @@ use Amp\Promise;
 use Amp\Socket\BindContext;
 use Amp\Socket\Server;
 use Amp\Socket\ServerTlsContext;
+use CatPaw\Utility\Factory;
 use CatPaw\Utility\Strings;
 use CatPaw\Web\Attribute\Http\RequestHeader;
 use CatPaw\Web\Exception\InvalidByteRangeQueryException;
@@ -55,6 +56,7 @@ class WebServer {
 		HttpConfiguration $config
 	): Promise {
 		return new LazyPromise(function() use ($config) {
+			Factory::setObject(HttpConfiguration::class,$config);
 			if(self::$started) return;
 			self::$started = true;
 
@@ -325,8 +327,8 @@ class WebServer {
 			}
 			return $response;
 		} catch(Throwable $e) {
-			$message = $config->httpShowException ? $e->getMessage() : '';
-			$trace = $config->httpShowException && $config->httpShowStackTrace ? "\n".$e->getTraceAsString() : '';
+			$message = $config->httpShowExceptions ? $e->getMessage() : '';
+			$trace = $config->httpShowExceptions && $config->httpShowStackTrace ? "\n".$e->getTraceAsString() : '';
 			$config->logger->error($e->getMessage());
 			$config->logger->error($e->getTraceAsString());
 			return new Response(500, [], $message.$trace);

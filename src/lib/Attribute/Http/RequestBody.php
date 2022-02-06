@@ -45,7 +45,7 @@ class RequestBody implements AttributeInterface {
 			$value = match ($className) {
 				"array"                             => $this->toArray(
 					body       : yield $http->request->getBody()->buffer(),
-					contentType: $http->request->getHeader("Content-Type"),
+					contentType: $http->request->getHeader("Content-Type")??'',
 				),
 
 				"string"                            => yield $http->request->getBody()->buffer(),
@@ -66,7 +66,7 @@ class RequestBody implements AttributeInterface {
 
 				default                             => $this->toObject(
 					body       : yield $http->request->getBody()->buffer(),
-					contentType: $http->request->getHeader("Content-Type"),
+					contentType: $http->request->getHeader("Content-Type")??'',
 					className  : $className
 				),
 			};
