@@ -1,12 +1,12 @@
 <?php
-namespace CatPaw\Web\Attribute;
+namespace CatPaw\Web\Attributes;
 
 use Amp\LazyPromise;
 use Amp\Promise;
 use Attribute;
-use CatPaw\Attribute\Interface\AttributeInterface;
-use CatPaw\Attribute\Trait\CoreAttributeDefinition;
-use CatPaw\Utility\Strings;
+use CatPaw\Attributes\Interfaces\AttributeInterface;
+use CatPaw\Attributes\Traits\CoreAttributeDefinition;
+use CatPaw\Utilities\Strings;
 use CatPaw\Web\HttpContext;
 use Exception;
 use JetBrains\PhpStorm\Pure;

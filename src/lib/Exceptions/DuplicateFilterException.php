@@ -1,13 +1,12 @@
 <?php
 
-namespace CatPaw\Web\Exception;
+namespace CatPaw\Web\Exceptions;
 
 use Exception;
 use JetBrains\PhpStorm\Pure;
 use Throwable;
 
-class ContentTypeRejectedException extends Exception
-{
+class DuplicateFilterException extends Exception {
 	// Redefine the exception so message isn't optional
 	#[Pure] public function __construct($message, $code = 0, Throwable $previous = null) {
 		// some code

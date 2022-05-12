@@ -1,11 +1,11 @@
 <?php
-namespace CatPaw\Web\Attribute;
+namespace CatPaw\Web\Attributes;
 
 use Amp\LazyPromise;
 use Amp\Promise;
 use Attribute;
-use CatPaw\Attribute\Interface\AttributeInterface;
-use CatPaw\Attribute\Trait\CoreAttributeDefinition;
+use CatPaw\Attributes\Interfaces\AttributeInterface;
+use CatPaw\Attributes\Traits\CoreAttributeDefinition;
 use CatPaw\Web\HttpContext;
 use ReflectionParameter;
 

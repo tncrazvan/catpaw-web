@@ -24,10 +24,10 @@ class HttpConfiguration {
 	/** @var false|Logger Application logger. */
 	public false|Logger $logger = false;
 
-	/** @var bool This dictates if the stack trace should be shown to the client whenever an Exception is caught or not. */
+	/** @var bool This dictates if the stack trace should be shown to the client whenever an Exceptions is caught or not. */
 	public bool $httpShowStackTrace = false;
 
-	/** @var bool This dictates if exceptions should be shown to the client whenever an Exception is caught or not. */
+	/** @var bool This dictates if exceptions should be shown to the client whenever an Exceptions is caught or not. */
 	public bool $httpShowExceptions = false;
 
 	/** @var Parsedown Markdown parser */
