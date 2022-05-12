@@ -1,16 +1,15 @@
 <?php
 
-namespace CatPaw\Web\Exceptions;
+namespace CatPaw\Web\Exception;
 
 use Exception;
 use JetBrains\PhpStorm\Pure;
 use Throwable;
 
-class InvalidByteRangeQueryException extends Exception
+class ContentTypeRejectedException extends Exception
 {
 	// Redefine the exception so message isn't optional
-	#[Pure] public function __construct($message, $code = 0, Throwable $previous = null)
-	{
+	#[Pure] public function __construct($message, $code = 0, Throwable $previous = null) {
 		// some code
 
 		// make sure everything is assigned properly
@@ -18,8 +17,7 @@ class InvalidByteRangeQueryException extends Exception
 	}
 
 	// custom string representation of object
-	public function __toString()
-	{
+	public function __toString() {
 		return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
 	}
 }

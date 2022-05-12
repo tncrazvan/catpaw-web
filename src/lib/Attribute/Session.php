@@ -1,12 +1,12 @@
 <?php
-namespace CatPaw\Web\Attributes;
+namespace CatPaw\Web\Attribute;
 
 use Amp\Http\Cookie\ResponseCookie;
 use Amp\LazyPromise;
 use Amp\Promise;
 use Attribute;
-use CatPaw\Attributes\Interfacess\AttributesInterface;
-use CatPaw\Attributes\Traits\CoreAttributeDefinition;
+use CatPaw\Attribute\Interface\AttributeInterface;
+use CatPaw\Attribute\Trait\CoreAttributeDefinition;
 use CatPaw\Web\HttpContext;
 use CatPaw\Web\Session\SessionOperationsInterface;
 use JetBrains\PhpStorm\Pure;

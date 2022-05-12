@@ -1,10 +1,9 @@
 <?php
-
-namespace CatPaw\Web\Attributes;
+namespace CatPaw\Web\Attribute;
 
 use Attribute;
-use CatPaw\Attributes\Interfacess\AttributesInterface;
-use CatPaw\Attributes\Traits\CoreAttributeDefinition;
+use CatPaw\Attribute\Interface\AttributeInterface;
+use CatPaw\Attribute\Trait\CoreAttributeDefinition;
 
 /**
  * Attach to a function or method.
@@ -24,19 +23,16 @@ use CatPaw\Attributes\Traits\CoreAttributeDefinition;
  * - image/png, image/jpeg
  */
 #[Attribute]
-class Consumes implements AttributeInterface
-{
+class Consumes implements AttributeInterface {
 	use CoreAttributeDefinition;
 
 	private array $contentType;
 
-	public function __construct(string ...$contentType)
-	{
+	public function __construct(string ...$contentType) {
 		$this->contentType = $contentType;
 	}
 
-	public function getContentType(): array
-	{
+	public function getContentType(): array {
 		return $this->contentType;
 	}
 }

@@ -1,15 +1,15 @@
 <?php
-namespace CatPaw\Web\Attributes;
+namespace CatPaw\Web\Attribute;
 
 use Amp\ByteStream\IteratorStream;
 use Amp\LazyPromise;
 use Amp\Producer;
 use Amp\Promise;
 use Attribute;
-use CatPaw\Attributes\Interfacess\AttributesInterface;
-use CatPaw\Attributes\Traits\CoreAttributeDefinition;
+use CatPaw\Attribute\Interface\AttributeInterface;
+use CatPaw\Attribute\Trait\CoreAttributeDefinition;
 use CatPaw\Web\HttpContext;
-use CatPaw\Web\Utilities\BodyParser;
+use CatPaw\Web\Utility\BodyParser;
 use Exception;
 use ReflectionParameter;
 

@@ -1,9 +1,9 @@
 <?php
-namespace CatPaw\Web\Attributes;
+namespace CatPaw\Web\Attribute;
 
 use Attribute;
-use CatPaw\Attributes\Interfacess\AttributesInterface;
-use CatPaw\Attributes\Traits\CoreAttributeDefinition;
+use CatPaw\Attribute\Interface\AttributeInterface;
+use CatPaw\Attribute\Trait\CoreAttributeDefinition;
 
 /**
  * Attatch to a function or method.
