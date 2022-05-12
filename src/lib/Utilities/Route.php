@@ -9,27 +9,29 @@ use CatPaw\Web\Attributes\PathParam;
 use CatPaw\Web\RouteHandlerContext;
 use Closure;
 use Generator;
-use Razshare\AsciiTable\AsciiTable;
 use ReflectionException;
 use ReflectionFunction;
 use ReflectionUnionType;
 use ReflectionType;
 use ReflectionMethod;
 use function implode;
+use CatPaw\Utilities\AsciiTable;
 
-class Route {
+class Route
+{
 
 	public static array $routes   = [];
 	public static array $patterns = [];
 
-	public static function describe(): string {
+	public static function describe(): string
+	{
 		$table = new AsciiTable();
 		$table->add("Method", "Path");
-		foreach(self::$routes as $method => $paths)
-			foreach($paths as $path => $callback)
-				if(!str_starts_with($path, '@'))
+		foreach (self::$routes as $method => $paths)
+			foreach ($paths as $path => $callback)
+				if (!str_starts_with($path, '@'))
 					$table->add($method, $path);
-		return $table->toString().PHP_EOL;
+		return $table->toString() . PHP_EOL;
 	}
 
 	/**
@@ -46,22 +48,22 @@ class Route {
 			'names'      => [],
 			'rawNames'   => [],
 		];
-		foreach($params as $param) {
+		foreach ($params as $param) {
 			/** @var PathParam $pathParam */
 			$pathParam = yield PathParam::findByParameter($param);
-			if($pathParam) {
+			if ($pathParam) {
 				$optional = $param->isOptional();
 				$typeName = 'string';
 
 				$type = $param->getType();
-				if($type instanceof ReflectionUnionType) {
+				if ($type instanceof ReflectionUnionType) {
 					$typeName = $type->getTypes()[0]->getName();
-				} else if($type instanceof ReflectionType) {
+				} else if ($type instanceof ReflectionType) {
 					$typeName = $type->getName();
 				}
 
-				if('' === $pathParam->getRegex())
-					switch($typeName) {
+				if ('' === $pathParam->getRegex())
+					switch ($typeName) {
 						case 'int':
 							$pathParam->setRegex('/^[-+]?[0-9]+$/');
 							break;
@@ -76,14 +78,14 @@ class Route {
 							break;
 					}
 				$targets['pathParams'][] = $pathParam;
-				$targets['names'][] = '\{'.$param->getName().'\}';
+				$targets['names'][] = '\{' . $param->getName() . '\}';
 				$targets['rawNames'][] = $param->getName();
 			}
 		}
 
-		if(count($targets['names']) > 0) {
-			$localPieces = preg_split('/('.join("|", $targets['names']).')/', $path);
-			$pattern = '/(?<={)('.join('|', $targets['rawNames']).')(?=})/';
+		if (count($targets['names']) > 0) {
+			$localPieces = preg_split('/(' . join("|", $targets['names']) . ')/', $path);
+			$pattern = '/(?<={)(' . join('|', $targets['rawNames']) . ')(?=})/';
 			$matches = [];
 			preg_match_all($pattern, $path, $matches);
 			[$names] = $matches;
@@ -93,9 +95,9 @@ class Route {
 				'rawNames'   => [],
 			];
 			$len = count($targets['rawNames']);
-			foreach($names as $name) {
-				for($i = 0; $i < $len; $i++) {
-					if($targets['rawNames'][$i] === $name) {
+			foreach ($names as $name) {
+				for ($i = 0; $i < $len; $i++) {
+					if ($targets['rawNames'][$i] === $name) {
 						$orderedTargets['pathParams'][] = $targets['pathParams'][$i];
 						$orderedTargets['names'][] = $targets['names'][$i];
 						$orderedTargets['rawNames'][] = $targets['rawNames'][$i];
@@ -108,28 +110,28 @@ class Route {
 
 		$piecesLen = count($localPieces);
 
-		return function(string $requestedPath) use ($targets, $localPieces, $piecesLen, $path) {
+		return function (string $requestedPath) use ($targets, $localPieces, $piecesLen, $path) {
 			$variables = [];
 			$offset = 0;
 			$reconstructed = '';
 			$pathParams = $targets['pathParams'];
-			for($i = 0; $i < $piecesLen; $i++) {
+			for ($i = 0; $i < $piecesLen; $i++) {
 				$piece = $localPieces[$i];
 				$plen = strlen($piece);
-				if($piece === ($subrp = substr($requestedPath, $offset, $plen))) {
+				if ($piece === ($subrp = substr($requestedPath, $offset, $plen))) {
 					$offset += strlen($subrp);
 					$reconstructed .= $subrp;
-					if(isset($pathParams[$i])) {
+					if (isset($pathParams[$i])) {
 						/** @var PathParam $param */
 						$param = $pathParams[$i];
-						$next = $localPieces[$i + 1]??false;
-						if(false !== $next) {
+						$next = $localPieces[$i + 1] ?? false;
+						if (false !== $next) {
 							$end = '' === $next ? strlen($requestedPath) : strpos($requestedPath, $next, $offset);
 
-							if($end === $offset)
+							if ($end === $offset)
 								return [false, []];
 							$variable = substr($requestedPath, $offset, ($len = $end - $offset));
-							if(!preg_match($param->getRegex(), $variable))
+							if (!preg_match($param->getRegex(), $variable))
 								return [false, []];
 							$offset += $len;
 							$reconstructed .= $variable;
@@ -154,34 +156,35 @@ class Route {
 		string        $path,
 		array|Closure $callbacks,
 	): void {
-		if(self::$routes[$method][$path]??false) {
-			if(!str_starts_with($path, "@"))
+		if (self::$routes[$method][$path] ?? false) {
+			if (!str_starts_with($path, "@"))
 				die(Strings::red("Overwriting handler [ $method $path ]\n"));
 			else {
-				echo(Strings::yellow("Overwriting handler [ $method $path ]\n"));
+				echo (Strings::yellow("Overwriting handler [ $method $path ]\n"));
 				self::$routes[$method][$path] = [];
 			}
 		}
 
-		if(!is_array($callbacks)) {
+		if (!is_array($callbacks)) {
 			$callbacks = [$callbacks];
 		}
 
 
 		try {
 			$len = count($callbacks);
-			foreach($callbacks as $i => $callback) {
+			foreach ($callbacks as $i => $callback) {
 				$isFilter = $len > 1 && $i < $len - 1;
 				$reflection = new ReflectionFunction($callback);
 				self::$patterns[$method][$path][] = self::findPathPatterns($path, $reflection->getParameters());
 				self::$routes[$method][$path][] = $callback;
 				//TODO refactor this attributes section
-				$parseAttributes = new LazyPromise(function() use ($method, $path, $isFilter, $reflection, $callback) {
+				$parseAttributes = new LazyPromise(function () use ($method, $path, $isFilter, $reflection, $callback) {
 					$context = new class(
-						method  : $method,
-						path    : $path,
+						method: $method,
+						path: $path,
 						isFilter: $isFilter,
-					) extends RouteHandlerContext {
+					) extends RouteHandlerContext
+					{
 						public function __construct(
 							public string $method,
 							public string $path,
@@ -190,18 +193,17 @@ class Route {
 						}
 					};
 
-					foreach($reflection->getAttributes() as $attribute) {
+					foreach ($reflection->getAttributes() as $attribute) {
 						$aname = $attribute->getName();
 						/** @var AttributeInterface $ainstance */
 						$ainstance = yield $aname::findByFunction($reflection);
-						if($ainstance)
+						if ($ainstance)
 							yield $ainstance->onRouteHandler($reflection, $callback, $context);
-
 					}
 				});
-				$parseAttributes->onResolve(fn() => true);
+				$parseAttributes->onResolve(fn () => true);
 			}
-		} catch(ReflectionException $e) {
+		} catch (ReflectionException $e) {
 			die(Strings::red($e));
 		}
 	}
@@ -211,11 +213,12 @@ class Route {
 	 *
 	 * @return array
 	 */
-	public static function getMappedParameters(ReflectionMethod $reflection_method): array {
+	public static function getMappedParameters(ReflectionMethod $reflection_method): array
+	{
 		$reflectionParameters = $reflection_method->getParameters();
 		$namedAndTypedParams = [];
 		$namedParams = [];
-		foreach($reflectionParameters as $reflectionParameter) {
+		foreach ($reflectionParameters as $reflectionParameter) {
 			$name = $reflectionParameter->getName();
 			$type = $reflectionParameter->getType()->getName();
 			$namedAndTypedParams[] = "$type &\$$name";
@@ -233,8 +236,9 @@ class Route {
 	 * @param string $original path name to capture
 	 * @param string $alias alias path name
 	 */
-	public static function alias(string $method, string $original, string $alias): void {
-		if(isset(self::$routes[$method][$original]))
+	public static function alias(string $method, string $original, string $alias): void
+	{
+		if (isset(self::$routes[$method][$original]))
 			self::custom($method, $alias, self::$routes[$method][$original]);
 		else
 			die(Strings::red("Trying to create alias \"$alias\" => \"$original\", but the original route \"$original\" has not beed defined.\n"));
@@ -247,7 +251,8 @@ class Route {
 	 *
 	 * @return void
 	 */
-	public static function notFound(array|Closure $callback): void {
+	public static function notFound(array|Closure $callback): void
+	{
 		static::copy('@404', $callback);
 		static::delete('@404', $callback);
 		static::get('@404', $callback);
@@ -274,7 +279,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function custom(string $method, string $path, array|Closure $callback): void {
+	public static function custom(string $method, string $path, array|Closure $callback): void
+	{
 		static::initialize($method, $path, $callback);
 	}
 
@@ -284,9 +290,9 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function copy(string $path, array|Closure $callback): void {
+	public static function copy(string $path, array|Closure $callback): void
+	{
 		static::initialize('COPY', $path, $callback);
-
 	}
 
 	/**
@@ -295,7 +301,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function delete(string $path, array|Closure $callback): void {
+	public static function delete(string $path, array|Closure $callback): void
+	{
 		static::initialize('DELETE', $path, $callback);
 	}
 
@@ -306,7 +313,8 @@ class Route {
 	 * @param array|Closure $callback the callback to execute.
 	 * @return void
 	 */
-	public static function get(string $path, array|Closure $callback): void {
+	public static function get(string $path, array|Closure $callback): void
+	{
 		static::initialize('GET', $path, $callback);
 	}
 
@@ -316,7 +324,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function head(string $path, array|Closure $callback): void {
+	public static function head(string $path, array|Closure $callback): void
+	{
 		static::initialize('HEAD', $path, $callback);
 	}
 
@@ -326,7 +335,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function link(string $path, array|Closure $callback): void {
+	public static function link(string $path, array|Closure $callback): void
+	{
 		static::initialize('LINK', $path, $callback);
 	}
 
@@ -336,7 +346,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function lock(string $path, array|Closure $callback): void {
+	public static function lock(string $path, array|Closure $callback): void
+	{
 		static::initialize('LOCK', $path, $callback);
 	}
 
@@ -346,7 +357,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function options(string $path, array|Closure $callback): void {
+	public static function options(string $path, array|Closure $callback): void
+	{
 		static::initialize('OPTIONS', $path, $callback);
 	}
 
@@ -356,7 +368,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function patch(string $path, array|Closure $callback): void {
+	public static function patch(string $path, array|Closure $callback): void
+	{
 		static::initialize('PATCH', $path, $callback);
 	}
 
@@ -366,7 +379,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function post(string $path, array|Closure $callback): void {
+	public static function post(string $path, array|Closure $callback): void
+	{
 		static::initialize('POST', $path, $callback);
 	}
 
@@ -376,7 +390,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function propfind(string $path, array|Closure $callback): void {
+	public static function propfind(string $path, array|Closure $callback): void
+	{
 		static::initialize('PROPFIND', $path, $callback);
 	}
 
@@ -386,7 +401,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function purge(string $path, array|Closure $callback): void {
+	public static function purge(string $path, array|Closure $callback): void
+	{
 		static::initialize('PURGE', $path, $callback);
 	}
 
@@ -396,7 +412,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function put(string $path, array|Closure $callback): void {
+	public static function put(string $path, array|Closure $callback): void
+	{
 		static::initialize('PUT', $path, $callback);
 	}
 
@@ -406,7 +423,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function unknown(string $path, array|Closure $callback): void {
+	public static function unknown(string $path, array|Closure $callback): void
+	{
 		static::initialize('UNKNOWN', $path, $callback);
 	}
 
@@ -416,7 +434,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function unlink(string $path, array|Closure $callback): void {
+	public static function unlink(string $path, array|Closure $callback): void
+	{
 		static::initialize('UNLINK', $path, $callback);
 	}
 
@@ -426,7 +445,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function unlock(string $path, array|Closure $callback): void {
+	public static function unlock(string $path, array|Closure $callback): void
+	{
 		static::initialize('UNLOCK', $path, $callback);
 	}
 
@@ -436,7 +456,8 @@ class Route {
 	 * @param string        $path the path the event should listen to.
 	 * @param array|Closure $callback the callback to execute.
 	 */
-	public static function view(string $path, array|Closure $callback): void {
+	public static function view(string $path, array|Closure $callback): void
+	{
 		static::initialize('VIEW', $path, $callback);
 	}
 }
