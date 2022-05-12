@@ -35,8 +35,7 @@ class StartWebServer implements AttributeInterface {
 	) {
 	}
 
-	#[
-		Entry]
+	#[Entry]
 	public function main(LoggerInterface $logger): Promise {
 		return new LazyPromise(function() use ($logger) {
 			$config = new HttpConfiguration();
