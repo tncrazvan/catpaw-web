@@ -1,4 +1,5 @@
 <?php
+
 namespace CatPaw\Web\Attributes;
 
 use Amp\LazyPromise;
@@ -16,7 +17,8 @@ use ReflectionUnionType;
 
 
 #[Attribute]
-class RequestQuery implements AttributeInterface {
+class RequestQuery implements AttributeInterface
+{
 	use CoreAttributeDefinition;
 
 	public function __construct(
@@ -24,26 +26,29 @@ class RequestQuery implements AttributeInterface {
 	) {
 	}
 
-	public function setName(string $name): void {
+	public function setName(string $name): void
+	{
 		$this->name = $name;
 	}
 
-	public function getName(): string {
+	public function getName(): string
+	{
 		return $this->name;
 	}
 
-	public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
+	public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise
+	{
 		/** @var false|HttpContext $http */
-		return new LazyPromise(function() use (
+		return new LazyPromise(function () use (
 			$reflection,
 			&$value,
-			$http,
+			$http
 		) {
 			$type = $reflection->getType();
 
-			if($type instanceof ReflectionUnionType) {
+			if ($type instanceof ReflectionUnionType) {
 				$typeName = $type->getTypes()[0]->getName();
-			} else if($type instanceof ReflectionType) {
+			} else if ($type instanceof ReflectionType) {
 				$typeName = $type->getName();
 			} else {
 				die(Strings::red("Handler \"$http->eventID\" must specify at least 1 type for query \"$this->name\".\n"));
@@ -55,9 +60,9 @@ class RequestQuery implements AttributeInterface {
 				"float"  => $this->toFloat($http),
 				"bool"   => $this->toBool($http),
 			};
-			if($result)
+			if ($result)
 				$value = $result;
-			else if(!$reflection->isOptional() && $reflection->allowsNull())
+			else if (!$reflection->isOptional() && $reflection->allowsNull())
 				$value = null;
 		});
 	}
@@ -66,8 +71,9 @@ class RequestQuery implements AttributeInterface {
 	 * @param HttpContext $http
 	 * @return false|string
 	 */
-	#[Pure] public function toString(HttpContext $http): false|string {
-		if(isset($http->query[$this->name]))
+	#[Pure] public function toString(HttpContext $http): false|string
+	{
+		if (isset($http->query[$this->name]))
 			return urldecode($http->query[$this->name]);
 		return false;
 	}
@@ -78,10 +84,11 @@ class RequestQuery implements AttributeInterface {
 	 * @return false|int
 	 * @throws Exception
 	 */
-	private function toInteger(HttpContext $http): false|int {
-		if(isset($http->query[$this->name])) {
+	private function toInteger(HttpContext $http): false|int
+	{
+		if (isset($http->query[$this->name])) {
 			$value = urldecode($http->query[$this->name]);
-			if(is_numeric($value))
+			if (is_numeric($value))
 				return (int)$value;
 			else
 				throw new Exception("RequestQuery $this->name was expected to be numeric, but non numeric value has been provided instead:$value");
@@ -94,8 +101,9 @@ class RequestQuery implements AttributeInterface {
 	 * @param HttpContext $http
 	 * @return bool
 	 */
-	#[Pure] private function toBool(HttpContext $http): bool {
-		if(isset($http->query[$this->name]))
+	#[Pure] private function toBool(HttpContext $http): bool
+	{
+		if (isset($http->query[$this->name]))
 			return filter_var(urldecode($http->query[$this->name]), FILTER_VALIDATE_BOOLEAN);
 		return false;
 	}
@@ -105,10 +113,11 @@ class RequestQuery implements AttributeInterface {
 	 * @return false|float
 	 * @throws Exception
 	 */
-	private function toFloat(HttpContext $http): false|float {
-		if(isset($http->query[$this->name])) {
+	private function toFloat(HttpContext $http): false|float
+	{
+		if (isset($http->query[$this->name])) {
 			$value = urldecode($http->query[$this->name]);
-			if(is_numeric($value))
+			if (is_numeric($value))
 				return (float)$value;
 			else
 				throw new Exception("RequestQuery $this->name was expected to be numeric, but non numeric value has been provided instead:$value");
