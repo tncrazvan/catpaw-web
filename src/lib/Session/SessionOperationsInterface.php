@@ -4,7 +4,7 @@ namespace CatPaw\Web\Session;
 
 
 use Amp\Promise;
-use CatPaw\Web\Attribute\Session;
+use CatPaw\Web\Attributes\Session;
 
 interface SessionOperationsInterface {
 

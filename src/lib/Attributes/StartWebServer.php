@@ -1,13 +1,13 @@
 <?php
-namespace CatPaw\Web\Attribute;
+namespace CatPaw\Web\Attributes;
 
 use Amp\LazyPromise;
 use Amp\Promise;
 use Amp\Socket\Certificate;
 use Attribute;
-use CatPaw\Attribute\Entry;
-use CatPaw\Attribute\Interface\AttributeInterface;
-use CatPaw\Attribute\Trait\CoreAttributeDefinition;
+use CatPaw\Attributes\Entry;
+use CatPaw\Attributes\Interfacess\AttributesInterface;
+use CatPaw\Attributes\Traits\CoreAttributeDefinition;
 use CatPaw\Web\HttpConfiguration;
 use CatPaw\Web\WebServer;
 use JetBrains\PhpStorm\ArrayShape;
