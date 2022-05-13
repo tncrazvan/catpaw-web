@@ -9,7 +9,6 @@ use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Attributes\Traits\CoreAttributeDefinition;
 use CatPaw\Web\HttpContext;
 use CatPaw\Web\Session\SessionOperationsInterface;
-use JetBrains\PhpStorm\Pure;
 use ReflectionParameter;
 
 /**
@@ -38,7 +37,7 @@ class Session implements AttributeInterface {
 		return self::$operations;
 	}
 
-	#[Pure] public static function create(): Session {
+	public static function create(): Session {
 		return new Session();
 	}
 

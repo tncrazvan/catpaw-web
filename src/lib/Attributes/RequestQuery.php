@@ -10,7 +10,6 @@ use CatPaw\Attributes\Traits\CoreAttributeDefinition;
 use CatPaw\Utilities\Strings;
 use CatPaw\Web\HttpContext;
 use Exception;
-use JetBrains\PhpStorm\Pure;
 use ReflectionParameter;
 use ReflectionType;
 use ReflectionUnionType;
@@ -71,7 +70,7 @@ class RequestQuery implements AttributeInterface
 	 * @param HttpContext $http
 	 * @return false|string
 	 */
-	#[Pure] public function toString(HttpContext $http): false|string
+	public function toString(HttpContext $http): false|string
 	{
 		if (isset($http->query[$this->name]))
 			return urldecode($http->query[$this->name]);
@@ -101,7 +100,7 @@ class RequestQuery implements AttributeInterface
 	 * @param HttpContext $http
 	 * @return bool
 	 */
-	#[Pure] private function toBool(HttpContext $http): bool
+	private function toBool(HttpContext $http): bool
 	{
 		if (isset($http->query[$this->name]))
 			return filter_var(urldecode($http->query[$this->name]), FILTER_VALIDATE_BOOLEAN);
