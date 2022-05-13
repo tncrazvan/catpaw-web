@@ -38,8 +38,7 @@ use function Amp\File\openFile;
 use function count;
 use const SIGINT;
 
-class WebServer
-{
+class WebServer {
 
 	private static $started = false;
 
@@ -50,25 +49,24 @@ class WebServer
 
 	private static false|HttpServer $httpServer = false;
 
-	private function __construct()
-	{
+	private function __construct() {
 	}
 
 
 	public static function start(
 		HttpConfiguration $config
 	): Promise {
-		return new LazyPromise(function () use ($config) {
+		return new LazyPromise(function() use ($config) {
 			Factory::setObject(HttpConfiguration::class, $config);
-			if (self::$started) return;
+			if(self::$started) return;
 			self::$started = true;
 
 			self::init($config);
 
 			Session::setOperations(
 				new FileSystemSessionOperations(
-					ttl: 1_440,
-					dirname: ".sessions",
+					ttl      : 1_440,
+					dirname  : ".sessions",
 					keepAlive: false,
 				)
 			);
@@ -77,39 +75,39 @@ class WebServer
 			$config->mdp = new Parsedown();
 
 
-			if (!$config->logger)
+			if(!$config->logger)
 				die(Strings::red("Please specify a logger instance.\n"));
 
 			$invoker = new HttpInvoker(Session::getOperations());
 
 			$sockets = [];
 
-			if (!is_iterable($config->httpInterfaces))
+			if(!is_iterable($config->httpInterfaces))
 				$interfaces = [$config->httpInterfaces];
 			else
 				$interfaces = $config->httpInterfaces;
 
 
-			foreach ($interfaces as $interface)
+			foreach($interfaces as $interface)
 				$sockets[] = Server::listen($interface);
 
-			if ($config->pemCertificate) {
+			if($config->pemCertificate) {
 				$context = (new BindContext)
 					->withTlsContext((new ServerTlsContext)
-						->withDefaultCertificate($config->pemCertificate));
+										 ->withDefaultCertificate($config->pemCertificate));
 
-				if (!is_iterable($config->httpSecureInterfaces))
-					$secureInterfaces = [$config->httpSecureInterfaces ?? []];
+				if(!is_iterable($config->httpSecureInterfaces))
+					$secureInterfaces = [$config->httpSecureInterfaces??[]];
 				else
 					$secureInterfaces = $config->httpSecureInterfaces;
 
-				foreach ($secureInterfaces as $interface)
-					if ($interface)
+				foreach($secureInterfaces as $interface)
+					if($interface)
 						$sockets[] = Server::listen($interface, $context);
-			} else if ($config->httpSecureInterfaces && count($config->httpSecureInterfaces) > 0)
+			} else if($config->httpSecureInterfaces && count($config->httpSecureInterfaces) > 0)
 				$config->logger->critical("Server could not bind to the secure network interfaces because no pem certificate has been provided.");
 
-			if (0 >= count($sockets)) {
+			if(0 >= count($sockets)) {
 				$config->logger->error("At least one network interface must be provided in order to start the server.");
 				die();
 			}
@@ -117,54 +115,52 @@ class WebServer
 			$server = self::$httpServer = new HttpServer(
 				$sockets,
 				new CallableRequestHandler(
-					static fn (Request $request) => static::serve($config, $request, $invoker)
+					static fn(Request $request) => static::serve($config, $request, $invoker)
 				),
 				$config->logger
 			);
 
-			$server->setErrorHandler(new class implements \Amp\Http\Server\ErrorHandler
-			{
-				public function handleError(int $statusCode, string $reason = null, Request $request = null): Promise
-				{
-					return new LazyPromise(function () use ($statusCode, $reason, $request) {
+			$server->setErrorHandler(new class implements \Amp\Http\Server\ErrorHandler {
+				public function handleError(int $statusCode, string $reason = null, Request $request = null): Promise {
+					return new LazyPromise(function() use ($statusCode, $reason, $request) {
 					});
 				}
 			});
 
 
 			yield $server->start();
+			if(DIRECTORY_SEPARATOR === '/') {
+				Loop::onSignal(SIGINT, static function(string $watcherId) use ($server) {
+					Loop::cancel($watcherId);
+					yield $server->stop();
+					Loop::stop();
+					die(0);
+				});
+			}
 
-			Loop::onSignal(SIGINT, static function (string $watcherId) use ($server) {
-				Loop::cancel($watcherId);
-				yield $server->stop();
-				Loop::stop();
-				die(0);
-			});
 		});
 	}
 
-	public static function getHttpServer(): false|HttpServer
-	{
+	public static function getHttpServer(): false|HttpServer {
 		return self::$httpServer;
 	}
 
-	private static function markdown(HttpConfiguration $config, string $filename): Promise
-	{
-		return new LazyPromise(function () use ($config, $filename) {
+	private static function markdown(HttpConfiguration $config, string $filename): Promise {
+		return new LazyPromise(function() use ($config, $filename) {
 			//##############################################################
-			$filenameLower = strtolower($config->httpWebroot . $filename);
-			if (!str_ends_with($filenameLower, ".md"))
-				return $config->httpWebroot . $filename;
+			$filenameLower = strtolower($config->httpWebroot.$filename);
+			if(!str_ends_with($filenameLower, ".md"))
+				return $config->httpWebroot.$filename;
 			//##############################################################
 
 			$filenameMD = "./.cache/markdown$filename.html";
-			$filename = $config->httpWebroot . $filename;
+			$filename = $config->httpWebroot.$filename;
 
-			if (is_file($filenameMD))
+			if(is_file($filenameMD))
 				return $filenameMD;
 
 
-			if (!is_dir($dirnameMD = dirname($filenameMD)))
+			if(!is_dir($dirnameMD = dirname($filenameMD)))
 				mkdir($dirnameMD, 0777, true);
 
 			/** @var File $html */
@@ -175,7 +171,7 @@ class WebServer
 			$chunkSize = 65536;
 			$contents = '';
 
-			while (!$html->eof()) {
+			while(!$html->eof()) {
 				$chunk = yield $html->read($chunkSize);
 				$contents .= $chunk;
 			}
@@ -193,20 +189,19 @@ class WebServer
 		});
 	}
 
-	public static function init(HttpConfiguration $config): void
-	{
-		Route::notFound(function (
+	public static function init(HttpConfiguration $config): void {
+		Route::notFound(function(
 			#[RequestHeader("range")] false|array $range,
 			Request $request,
 			ByteRangeService $service,
 		) use ($config) {
 			$path = urldecode($request->getUri()->getPath());
-			$filename = $config->httpWebroot . $path;
-			if (yield isDirectory($filename)) {
-				if (!str_ends_with($filename, '/'))
+			$filename = $config->httpWebroot.$path;
+			if(yield isDirectory($filename)) {
+				if(!str_ends_with($filename, '/'))
 					$filename .= '/';
 
-				if (yield exists("{$filename}index.md")) {
+				if(yield exists("{$filename}index.md")) {
 					$filename .= 'index.md';
 				} else {
 					$filename .= 'index.html';
@@ -215,77 +210,72 @@ class WebServer
 
 			$lowered = strtolower($filename);
 
-			if (str_ends_with($lowered, '.md'))
+			if(str_ends_with($lowered, '.md'))
 				$type = self::MARKDOWN;
-			else if (str_ends_with($lowered, '.html') || str_ends_with($lowered, ".htm"))
+			else if(str_ends_with($lowered, '.html') || str_ends_with($lowered, ".htm"))
 				$type = self::HTML;
 			else
 				$type = self::OTHER;
 
-			if (!strpos($filename, '../') && (yield exists($filename))) {
-				if (self::MARKDOWN === $type) {
+			if(!strpos($filename, '../') && (yield exists($filename))) {
+				if(self::MARKDOWN === $type) {
 					/** @var string $filename */
 					$filename = yield self::markdown($config, $filename);
 				}
 				$length = yield getSize($filename);
 				try {
 					return $service->response(
-						rangeQuery: $range[0] ?? "",
-						headers: [
-							"Content-Type"   => Mime::getContentType($filename),
-							"Content-Length" => $length,
-						],
-						writer: new class($filename) implements ByteRangeWriterInterface
-						{
-							private File $file;
+						rangeQuery: $range[0]??"",
+						headers   : [
+										"Content-Type"   => Mime::getContentType($filename),
+										"Content-Length" => $length,
+									],
+						writer    : new class($filename) implements ByteRangeWriterInterface {
+										private File $file;
 
-							public function __construct(private string $filename)
-							{
-							}
+										public function __construct(private string $filename) {
+										}
 
-							public function start(): Promise
-							{
-								return new LazyPromise(function () {
-									$this->file = yield openFile($this->filename, "r");
-								});
-							}
+										public function start(): Promise {
+											return new LazyPromise(function() {
+												$this->file = yield openFile($this->filename, "r");
+											});
+										}
 
 
-							public function data(callable $emit, int $start, int $length): Promise
-							{
-								return new LazyPromise(function () use ($emit, $start, $length) {
-									yield $this->file->seek($start);
-									$data = yield $this->file->read($length);
-									yield $emit($data);
-								});
-							}
+										public function data(callable $emit, int $start, int $length): Promise {
+											return new LazyPromise(function() use ($emit, $start, $length) {
+												yield $this->file->seek($start);
+												$data = yield $this->file->read($length);
+												yield $emit($data);
+											});
+										}
 
 
-							public function end(): Promise
-							{
-								return new LazyPromise(function () {
-									yield $this->file->close();
-								});
-							}
-						}
+										public function end(): Promise {
+											return new LazyPromise(function() {
+												yield $this->file->close();
+											});
+										}
+									}
 					);
-				} catch (InvalidByteRangeQueryException) {
+				} catch(InvalidByteRangeQueryException) {
 					return new Response(
-						code: Status::OK,
-						headers: [
-							"accept-ranges"  => "bytes",
-							"Content-Type"   => Mime::getContentType($filename),
-							"Content-Length" => $length,
-						],
+						code          : Status::OK,
+						headers       : [
+											"accept-ranges"  => "bytes",
+											"Content-Type"   => Mime::getContentType($filename),
+											"Content-Length" => $length,
+										],
 						stringOrStream: new IteratorStream(
-							new Producer(function ($emit) use ($filename) {
-								/** @var File $file */
-								$file = yield openFile($filename, "r");
-								while ($chunk = yield $file->read(65536))
-									yield $emit($chunk);
-								yield $file->close();
-							})
-						)
+											new Producer(function($emit) use ($filename) {
+												/** @var File $file */
+												$file = yield openFile($filename, "r");
+												while($chunk = yield $file->read(65536))
+													yield $emit($chunk);
+												yield $file->close();
+											})
+										)
 					);
 				}
 			}
@@ -302,8 +292,7 @@ class WebServer
 	 * @throws Exception
 	 * @throws Throwable
 	 */
-	private static function serve(HttpConfiguration $config, Request $httpRequest, HttpInvoker $invoker): Generator
-	{
+	private static function serve(HttpConfiguration $config, Request $httpRequest, HttpInvoker $invoker): Generator {
 		$httpRequestMethod = $httpRequest->getMethod();
 		$httpRequestUri = $httpRequest->getUri();
 		$httpRequestPath = $httpRequestUri->getPath();
@@ -311,15 +300,15 @@ class WebServer
 		//check if request matches any exposed endpoint and extract parameters
 		[$httpRequestPath, $httpRequestPathParameters] = yield from static::usingPath($httpRequestMethod, $httpRequestPath, Route::$routes);
 
-		if (!$httpRequestPath) {
+		if(!$httpRequestPath) {
 			$response = yield from $invoker->invoke(
-				httpRequest: $httpRequest,
-				httpRequestMethod: $httpRequestMethod,
-				httpRequestPath: '@404',
+				httpRequest              : $httpRequest,
+				httpRequestMethod        : $httpRequestMethod,
+				httpRequestPath          : '@404',
 				httpRequestPathParameters: $httpRequestPathParameters,
 			);
 
-			if (!$response) {
+			if(!$response) {
 				$config->logger->error("There is no event listener or controller that manages \"404 Not Found\" requests, serving an empty \"500 Internal Server Error\" response instead.");
 				$response = new Response(Status::INTERNAL_SERVER_ERROR);
 			}
@@ -328,41 +317,40 @@ class WebServer
 
 		try {
 			$response = yield from $invoker->invoke(
-				httpRequest: $httpRequest,
-				httpRequestMethod: $httpRequestMethod,
-				httpRequestPath: $httpRequestPath,
+				httpRequest              : $httpRequest,
+				httpRequestMethod        : $httpRequestMethod,
+				httpRequestPath          : $httpRequestPath,
 				httpRequestPathParameters: $httpRequestPathParameters,
 			);
 
-			if (!$response) {
+			if(!$response) {
 				$config->logger->critical("The path matcher returned a match for \"$httpRequestMethod\" but the invoker couldn't find the function/method to invoke, serving an empty \"500 Internal Server Error\" response instead.");
 				$response = new Response(Status::INTERNAL_SERVER_ERROR);
 			}
 			return $response;
-		} catch (Throwable $e) {
+		} catch(Throwable $e) {
 			$message = $config->httpShowExceptions ? $e->getMessage() : '';
-			$trace = $config->httpShowExceptions && $config->httpShowStackTrace ? "\n" . $e->getTraceAsString() : '';
+			$trace = $config->httpShowExceptions && $config->httpShowStackTrace ? "\n".$e->getTraceAsString() : '';
 			$config->logger->error($e->getMessage());
 			$config->logger->error($e->getTraceAsString());
-			return new Response(500, [], $message . $trace);
+			return new Response(500, [], $message.$trace);
 		}
 	}
 
 	private static array $cache = [];
 
-	private static function usingPath(string $httpRequestMethod, string $httpRequestPath, array $callbacks): Generator
-	{
-		if (!isset($callbacks[$httpRequestMethod]))
+	private static function usingPath(string $httpRequestMethod, string $httpRequestPath, array $callbacks): Generator {
+		if(!isset($callbacks[$httpRequestMethod]))
 			return [false, []];
-		foreach ($callbacks[$httpRequestMethod] as $localPath => $callback) {
-			if (!isset(self::$cache[$httpRequestMethod])) {
+		foreach($callbacks[$httpRequestMethod] as $localPath => $callback) {
+			if(!isset(self::$cache[$httpRequestMethod])) {
 				self::$cache[$httpRequestMethod] = [];
 			}
-			if (isset(self::$cache[$httpRequestMethod][$localPath])) {
+			if(isset(self::$cache[$httpRequestMethod][$localPath])) {
 				$patterns = self::$cache[$httpRequestMethod][$localPath];
 			} else {
 				$patterns = [];
-				foreach (Route::$patterns[$httpRequestMethod][$localPath] as $g) {
+				foreach(Route::$patterns[$httpRequestMethod][$localPath] as $g) {
 					$patterns[] = yield from $g;
 				}
 				self::$cache[$httpRequestMethod][$localPath] = $patterns;
@@ -370,14 +358,14 @@ class WebServer
 			$ok = false;
 			$allParams = [];
 			/** @var callable $pattern */
-			foreach ($patterns as $pattern) {
+			foreach($patterns as $pattern) {
 				[$k, $params] = $pattern($httpRequestPath);
-				if ($k) {
+				if($k) {
 					$ok = true;
 					$allParams[] = $params;
 				}
 			}
-			if ($ok) {
+			if($ok) {
 				return [$localPath, $allParams];
 			}
 		}
