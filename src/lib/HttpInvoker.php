@@ -209,13 +209,8 @@ class HttpInvoker {
 			return new Response(Status::BAD_REQUEST, [], $message);
 		}
 
-
-		$value = $callback(...$parameters);
-
-		if($value instanceof Generator)
-			$value = yield from $value;
-		else if($value instanceof Promise)
-			$value = yield $value;
+		
+		$value = yield \Amp\call($callback(...$parameters));
 
 		if(($sessionIDCookie = $http->response->getCookie("session-id")??false))
 			yield $this->sops->persistSession($sessionIDCookie->getValue());
@@ -328,12 +323,10 @@ class HttpInvoker {
 			public function handleHandshake(Gateway $gateway, Request $request, Response $response): Promise {
 				return new LazyPromise(function() use ($gateway, $request, $response) {
 					try {
-						$r = $this->wsi->onStart($gateway);
-						if($r instanceof Generator) yield from $r;
+						yield \Amp\call($this->wsi->onStart($gateway));
 
 					} catch(Throwable $e) {
-						$r = $this->wsi->onError($e);
-						if($r instanceof Generator) yield from $r;
+						yield \Amp\call($this->wsi->onError($e));
 					}
 					return new Success($response);
 				});
@@ -342,25 +335,17 @@ class HttpInvoker {
 			public function handleClient(Gateway $gateway, Client $client, Request $request, Response $response): Promise {
 				return call(function() use ($gateway, $client): Generator {
 					try {
-						while($message = yield $client->receive()) {
-							$r = $this->wsi->onMessage($message, $gateway, $client);
-							if($r instanceof Generator) yield from $r;
-						}
+						while($message = yield $client->receive())							
+							yield \Amp\call($this->wsi->onMessage($message, $gateway, $client));
+						
 						try {
-							$client->onClose(function(...$args) {
-								$r = $this->wsi->onClose(...$args);
-								if($r instanceof Generator) yield from $r;
-							});
-
+							$client->onClose(fn(...$args) => yield \Amp\call($this->wsi->onClose(...$args)));
 						} catch(Throwable $e) {
-							$r = $this->wsi->onError($e);
-							if($r instanceof Generator) yield from $r;
-
+							yield \Amp\call($this->wsi->onError($e));
 							$client->close(Code::ABNORMAL_CLOSE);
 						}
 					} catch(Throwable $e) {
-						$r = $this->wsi->onError($e);
-						if($r instanceof Generator) yield from $r;
+						yield \Amp\call($this->wsi->onError($e));
 						$client->close(Code::ABNORMAL_CLOSE);
 					}
 				});
