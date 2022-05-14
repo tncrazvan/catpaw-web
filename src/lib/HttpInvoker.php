@@ -210,7 +210,7 @@ class HttpInvoker {
 		}
 
 		
-		$value = yield \Amp\call($callback(...$parameters));
+		$value = yield \Amp\call($callback,...$parameters);
 
 		if(($sessionIDCookie = $http->response->getCookie("session-id")??false))
 			yield $this->sops->persistSession($sessionIDCookie->getValue());
@@ -323,10 +323,10 @@ class HttpInvoker {
 			public function handleHandshake(Gateway $gateway, Request $request, Response $response): Promise {
 				return new LazyPromise(function() use ($gateway, $request, $response) {
 					try {
-						yield \Amp\call($this->wsi->onStart($gateway));
+						yield \Amp\call(fn()=>$this->wsi->onStart($gateway));
 
 					} catch(Throwable $e) {
-						yield \Amp\call($this->wsi->onError($e));
+						yield \Amp\call(fn()=>$this->wsi->onError($e));
 					}
 					return new Success($response);
 				});
@@ -336,16 +336,16 @@ class HttpInvoker {
 				return call(function() use ($gateway, $client): Generator {
 					try {
 						while($message = yield $client->receive())							
-							yield \Amp\call($this->wsi->onMessage($message, $gateway, $client));
+							yield \Amp\call(fn()=>$this->wsi->onMessage($message, $gateway, $client));
 						
 						try {
-							$client->onClose(fn(...$args) => yield \Amp\call($this->wsi->onClose(...$args)));
+							$client->onClose(fn(...$args) => yield \Amp\call(fn()=>$this->wsi->onClose(...$args)));
 						} catch(Throwable $e) {
-							yield \Amp\call($this->wsi->onError($e));
+							yield \Amp\call(fn()=>$this->wsi->onError($e));
 							$client->close(Code::ABNORMAL_CLOSE);
 						}
 					} catch(Throwable $e) {
-						yield \Amp\call($this->wsi->onError($e));
+						yield \Amp\call(fn()=>$this->wsi->onError($e));
 						$client->close(Code::ABNORMAL_CLOSE);
 					}
 				});
