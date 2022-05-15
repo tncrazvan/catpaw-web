@@ -20,12 +20,12 @@ class StartWebServer implements AttributeInterface {
 	use CoreAttributeDefinition;
 
 	/**
-	 * @param array|string       $interfaces list of interfaces to bind to.
-	 * @param array|string|false $secureInterfaces list of secure interfaces to bind to (requires perCertificate).
-	 * @param string             $webroot the directory the application should serve.
-	 * @param bool               $showStackTrace if true the application will show the stack trace to the client.
-	 * @param bool               $showExceptions if true the application will show exception messages to the client.
-	 * @param array<string>      $pemCertificates paths to your pem certificates.
+	 * @param array|string         $interfaces list of interfaces to bind to.
+	 * @param array|string|false   $secureInterfaces list of secure interfaces to bind to (requires perCertificate).
+	 * @param string               $webroot the directory the application should serve.
+	 * @param bool                 $showStackTrace if true the application will show the stack trace to the client.
+	 * @param bool                 $showExceptions if true the application will show exception messages to the client.
+	 * @param array<string,string> $pemCertificates an array mapping domain names to pem certificates.
 	 */
 	public function __construct(
 		public array|string       $interfaces = "127.0.0.1:8080",
@@ -42,10 +42,10 @@ class StartWebServer implements AttributeInterface {
 		return new LazyPromise(function() use ($logger) {
 			$config = new HttpConfiguration();
 			$config->pemCertificates = [];
-			foreach($this->pemCertificates as $certificateFilename) {
-				try{
-					$config->pemCertificates[] = new Certificate($certificateFilename);
-				}catch(Throwable $e){
+			foreach($this->pemCertificates as $domain => $certificateFilename) {
+				try {
+					$config->pemCertificates[$domain] = new Certificate($certificateFilename);
+				} catch(Throwable $e) {
 					$logger->error($e->getMessage());
 				}
 			}

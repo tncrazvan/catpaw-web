@@ -3,9 +3,8 @@
 namespace CatPaw\Web;
 
 use Amp\Socket\Certificate;
-use Closure;
-use Monolog\Logger;
 use Parsedown;
+use Psr\Log\LoggerInterface;
 
 class HttpConfiguration {
 
@@ -21,8 +20,8 @@ class HttpConfiguration {
 	/** @var array<Certificate> Socket certificates to use for secure connections. */
 	public array $pemCertificates = [];
 
-	/** @var false|Logger Application logger. */
-	public false|Logger $logger = false;
+	/** @var false|LoggerInterface Application logger. */
+	public false|LoggerInterface $logger = false;
 
 	/** @var bool This dictates if the stack trace should be shown to the client whenever an Exceptions is caught or not. */
 	public bool $httpShowStackTrace = false;
