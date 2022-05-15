@@ -41,14 +41,7 @@ class StartWebServer implements AttributeInterface {
 	public function main(LoggerInterface $logger): Promise {
 		return new LazyPromise(function() use ($logger) {
 			$config = new HttpConfiguration();
-			$config->pemCertificates = [];
-			foreach($this->pemCertificates as $domain => $certificateFilename) {
-				try {
-					$config->pemCertificates[$domain] = new Certificate($certificateFilename);
-				} catch(Throwable $e) {
-					$logger->error($e->getMessage());
-				}
-			}
+			$config->pemCertificates = $this->pemCertificates;
 
 			$config->httpInterfaces = $this->interfaces;
 			$config->httpSecureInterfaces = $this->secureInterfaces;
