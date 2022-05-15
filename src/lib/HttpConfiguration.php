@@ -18,8 +18,8 @@ class HttpConfiguration {
 	/** @var string Directory the application should serve. */
 	public string $httpWebroot = 'public';
 
-	/** @var false|Certificate Socket certificate to use for secure connections. */
-	public false|Certificate $pemCertificate = false;
+	/** @var array<Certificate> Socket certificates to use for secure connections. */
+	public array $pemCertificates = [];
 
 	/** @var false|Logger Application logger. */
 	public false|Logger $logger = false;

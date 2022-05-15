@@ -20,7 +20,6 @@ use CatPaw\Utilities\Factory;
 use CatPaw\Utilities\Strings;
 use CatPaw\Web\Attributes\RequestHeader;
 use CatPaw\Web\Exceptions\InvalidByteRangeQueryException;
-use CatPaw\Web\HttpInvoker;
 use CatPaw\Web\Attributes\Session;
 use CatPaw\Web\Interfaces\ByteRangeWriterInterface;
 use CatPaw\Web\Services\ByteRangeService;
@@ -36,7 +35,6 @@ use function Amp\File\getSize;
 use function Amp\File\isDirectory;
 use function Amp\File\openFile;
 use function count;
-use const SIGINT;
 
 class WebServer {
 
@@ -91,10 +89,22 @@ class WebServer {
 			foreach($interfaces as $interface)
 				$sockets[] = Server::listen($interface);
 
-			if($config->pemCertificate) {
+			if($config->pemCertificates) {
+				$tlscontext = (new ServerTlsContext)
+					->withCertificates($config->pemCertificates);
+
 				$context = (new BindContext)
-					->withTlsContext((new ServerTlsContext)
-										 ->withDefaultCertificate($config->pemCertificate));
+					->withTlsContext($tlscontext);
+
+				foreach($context->getTlsContext()->getCertificates() as $certificate) {
+					$config->logger->info("Using certificate file {$certificate->getCertFile()}");
+					$config->logger->info("Using certificate key file {$certificate->getKeyFile()}");
+				}
+
+
+				$config->logger->info("Using CA path {$context->getTlsContext()->getCaPath()}");
+				$config->logger->info("Using CA file {$context->getTlsContext()->getCaFile()}");
+
 
 				if(!is_iterable($config->httpSecureInterfaces))
 					$secureInterfaces = [$config->httpSecureInterfaces??[]];
@@ -130,7 +140,7 @@ class WebServer {
 
 			yield $server->start();
 			if(DIRECTORY_SEPARATOR === '/') {
-				Loop::onSignal(SIGINT, static function(string $watcherId) use ($server) {
+				Loop::onSignal(\SIGINT, static function(string $watcherId) use ($server) {
 					Loop::cancel($watcherId);
 					yield $server->stop();
 					Loop::stop();
