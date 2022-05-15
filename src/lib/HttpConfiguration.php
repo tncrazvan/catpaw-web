@@ -17,7 +17,7 @@ class HttpConfiguration {
 	/** @var string Directory the application should serve. */
 	public string $httpWebroot = 'public';
 
-	/** @var array<string,string> an array mapping domain names to pem certificates. */
+	/** @var array<string,Certificate> an array mapping domain names to pem certificates. */
 	public array $pemCertificates = [];
 
 	/** @var false|LoggerInterface Application logger. */
