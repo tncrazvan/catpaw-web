@@ -33,11 +33,6 @@
       "CatPaw\\Web\\": "src/lib/"
     }
   },
-  "autoload-dev":{
-    "psr-4":{
-      "CatPaw\\Web\\Tests\\": "tests/"
-    }
-  },
   "require": {
     "php": "^8.0",
     "amphp/amp": "^2.6",
@@ -45,6 +40,11 @@
     "erusev/parsedown": "^1.7",
     "ext-mbstring": "*",
     "catpaw/core": "^1.2"
+  },
+  "autoload-dev":{
+    "psr-4":{
+      "Tests\\": "tests/"
+    }
   },
   "require-dev":{
     "phpunit/phpunit": "^9.5",
