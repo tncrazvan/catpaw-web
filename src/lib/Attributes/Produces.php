@@ -1,4 +1,5 @@
 <?php
+
 namespace CatPaw\Web\Attributes;
 
 use Attribute;
@@ -15,17 +16,17 @@ use CatPaw\Attributes\Traits\CoreAttributeDefinition;
  */
 #[Attribute]
 class Produces implements AttributeInterface {
-	use CoreAttributeDefinition;
+    use CoreAttributeDefinition;
 
-	private array $contentType;
+    private array $contentType;
 
-	public function __construct(
-		string ...$contentType
-	) {
-		$this->contentType = $contentType;
-	}
+    public function __construct(
+        string ...$contentType
+    ) {
+        $this->contentType = $contentType;
+    }
 
-	public function getContentType(): array {
-		return $this->contentType;
-	}
+    public function getContentType(): array {
+        return $this->contentType;
+    }
 }

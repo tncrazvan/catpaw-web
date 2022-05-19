@@ -7,11 +7,11 @@ use Amp\Http\Server\Response;
 use CatPaw\Web\Session\SessionOperationsInterface;
 
 class HttpContext {
-	public SessionOperationsInterface $sessionOperations;
+    public SessionOperationsInterface $sessionOperations;
 
-	public string   $eventID;
-	public array    $params;
-	public array    $query;
-	public Request  $request;
-	public Response $response;
+    public string   $eventID;
+    public array    $params;
+    public array    $query;
+    public Request  $request;
+    public Response $response;
 }

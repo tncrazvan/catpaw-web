@@ -14,7 +14,11 @@
   ],
   "scripts": {
     "load": "@composer dump-autoload -o",
-    "script": "@php ./vendor/catpaw/core/scripts/start.php"
+    "script": "@php ./vendor/catpaw/core/scripts/start.php",
+    "fix": [
+      "@php ./vendor/bin/php-cs-fixer fix src",
+      "@php ./vendor/bin/php-cs-fixer fix tests"
+    ]
   },
   "authors": [
     {
@@ -29,6 +33,11 @@
       "CatPaw\\Web\\": "src/lib/"
     }
   },
+  "autoload-dev":{
+    "psr-4":{
+      "CatPaw\\Web\\Tests\\": "tests/"
+    }
+  },
   "require": {
     "php": "^8.0",
     "amphp/amp": "^2.6",
@@ -36,6 +45,10 @@
     "erusev/parsedown": "^1.7",
     "ext-mbstring": "*",
     "catpaw/core": "^1.2"
+  },
+  "require-dev":{
+    "phpunit/phpunit": "^9.5",
+    "friendsofphp/php-cs-fixer": "^3.8"
   },
   "config": {
     "preferred-install": "dist",

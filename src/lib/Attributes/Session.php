@@ -1,4 +1,5 @@
 <?php
+
 namespace CatPaw\Web\Attributes;
 
 use Amp\Http\Cookie\ResponseCookie;
@@ -21,85 +22,89 @@ use ReflectionParameter;
  */
 #[Attribute]
 class Session implements AttributeInterface {
-	use CoreAttributeDefinition;
+    use CoreAttributeDefinition;
 
-	private string $id;
-	private array  $STORAGE = [];
-	private int    $time;
+    private string $id;
+    private array  $STORAGE = [];
+    private int    $time;
 
-	private static false|SessionOperationsInterface $operations = false;
+    private static false|SessionOperationsInterface $operations = false;
 
-	public static function setOperations(SessionOperationsInterface $operations): void {
-		self::$operations = $operations;
-	}
+    public static function setOperations(SessionOperationsInterface $operations): void {
+        self::$operations = $operations;
+    }
 
-	public static function getOperations():false|SessionOperationsInterface {
-		return self::$operations;
-	}
+    public static function getOperations(): false|SessionOperationsInterface {
+        return self::$operations;
+    }
 
-	public static function create(): Session {
-		return new Session();
-	}
+    public static function create(): Session {
+        return new Session();
+    }
 
-	public function setId(string $id): void {
-		$this->id = $id;
-	}
+    public function setId(string $id): void {
+        $this->id = $id;
+    }
 
-	public function getTime(): int {
-		return $this->time;
-	}
+    public function getTime(): int {
+        return $this->time;
+    }
 
-	public function setTime(int $time): void {
-		$this->time = $time;
-	}
+    public function setTime(int $time): void {
+        $this->time = $time;
+    }
 
-	public function getId(): string {
-		return $this->id;
-	}
+    public function getId(): string {
+        return $this->id;
+    }
 
-	public function &storage(): array {
-		return $this->STORAGE;
-	}
+    public function &storage(): array {
+        return $this->STORAGE;
+    }
 
-	public function setStorage(array &$storage): void {
-		$this->STORAGE = $storage;
-	}
+    public function setStorage(array &$storage): void {
+        $this->STORAGE = $storage;
+    }
 
-	public function &get(string $key) {
-		return $this->STORAGE[$key];
-	}
+    public function &get(string $key) {
+        return $this->STORAGE[$key];
+    }
 
-	public function set(string $key, $object): void {
-		$this->STORAGE[$key] = $object;
-	}
+    public function set(string $key, $object): void {
+        $this->STORAGE[$key] = $object;
+    }
 
-	public function remove(string $key): void {
-		unset($this->STORAGE[$key]);
-	}
+    public function remove(string $key): void {
+        unset($this->STORAGE[$key]);
+    }
 
-	public function has(string $key): bool {
-		return isset($this->STORAGE[$key]);
-	}
+    public function has(string $key): bool {
+        return isset($this->STORAGE[$key]);
+    }
 
 
-	public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
-		/** @var false|HttpContext $http */
-		return new LazyPromise(function() use (
-			$reflection,
-			&$value,
-			$http
-		) {
-			if(!$http) return;
-			/** @var Session $session */
-			$sessionIDCookie = $http->request->getCookie("session-id")??false;
-			$sessionID = $sessionIDCookie ? $sessionIDCookie->getValue() : '';
-			$session = yield $http->sessionOperations->validateSession(id: $sessionID);
-			if(!$session)
-				$session = yield $http->sessionOperations->startSession($sessionID);
-			if($sessionID !== $session->getId())
-				$http->response->setCookie(new ResponseCookie("session-id", $session->getId()));
+    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
+        /** @var false|HttpContext $http */
+        return new LazyPromise(function () use (
+            $reflection,
+            &$value,
+            $http
+        ) {
+            if (!$http) {
+                return;
+            }
+            /** @var Session $session */
+            $sessionIDCookie = $http->request->getCookie("session-id") ?? false;
+            $sessionID = $sessionIDCookie ? $sessionIDCookie->getValue() : '';
+            $session = yield $http->sessionOperations->validateSession(id: $sessionID);
+            if (!$session) {
+                $session = yield $http->sessionOperations->startSession($sessionID);
+            }
+            if ($session->getId() !== $sessionID) {
+                $http->response->setCookie(new ResponseCookie("session-id", $session->getId()));
+            }
 
-			$value = $session;
-		});
-	}
+            $value = $session;
+        });
+    }
 }

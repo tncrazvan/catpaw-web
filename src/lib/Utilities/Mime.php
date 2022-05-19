@@ -1,43 +1,44 @@
 <?php
+
 namespace CatPaw\Web\Utilities;
 
-abstract class Mime{
+abstract class Mime {
     /**
      * Alias of Mime::getContentType
      * Returns the mime type of the given resource.
      * For example, given the filename "/index.html", the mime type returned will be "text/html".
      * This can be useful when sending data to your clients.
-     * @param string $location resource name.
+     * @param  string $location resource name.
      * @return string the mime type of the given resource as a String.
      */
-    public static function resolveContentType(string $location):string{
+    public static function resolveContentType(string $location): string {
         return self::getContentType($location);
     }
-    
+
     /**
      * Returns the mime type of the given resource.
      * For example, given the filename "/index.html", the mime type returned will be "text/html".
      * This can be useful when sending data to your clients.
-     * @param string $location location resource name.
+     * @param  string $location location resource name.
      * @return string the mime type of the given resource as a String.
      */
-    public static function getContentType(string $location):string{
+    public static function getContentType(string $location): string {
         $tmpType = "";
-        $tmpType0 = preg_split("/\\//",$location);
+        $tmpType0 = preg_split("/\\//", $location);
         $tmpType0Length = count($tmpType0);
-        if($tmpType0Length > 0){
-            $tmpType1 = preg_split("/\\./",$tmpType0[$tmpType0Length-1]);
+        if ($tmpType0Length > 0) {
+            $tmpType1 = preg_split("/\\./", $tmpType0[$tmpType0Length - 1]);
             $tmpType1Length = count($tmpType1);
-            if($tmpType1Length > 1){
-                $tmpType = $tmpType1[$tmpType1Length-1];
-            }else{
+            if ($tmpType1Length > 1) {
+                $tmpType = $tmpType1[$tmpType1Length - 1];
+            } else {
                 $tmpType = "";
             }
-        }else{
+        } else {
             $tmpType = "";
         }
-        
-        switch($tmpType){
+
+        switch ($tmpType) {
             case "mkv":return "video/x-matroska";
             case "html":return "text/html";
             case "css": return "text/css";
@@ -50,7 +51,7 @@ abstract class Mime{
             case "woff2": return "font/woff2";
 
             case "aac":return "audio/aac";
-            case "mid": 
+            case "mid":
             case "midi":return "audio/midi";
             case "oga":return "audio/og";
             case "wav":return "audio/x-wav";
@@ -58,13 +59,13 @@ abstract class Mime{
             case "mp3":return "audio/mpeg";
 
             case "ico":return "image/x-icon";
-            case "jpeg": 
+            case "jpeg":
             case "jpg":return "image/jpeg";
             case "png":return "image/png";
             case "gif":return "image/gif";
             case "bmp":return "image/bmp";
             case "svg":return "image/svg+xml";
-            case "tif": 
+            case "tif":
             case "tiff":return "image/tiff";
             case "webp":return "image/webp";
 
@@ -109,7 +110,7 @@ abstract class Mime{
             case "zip":return "application/zip";
             case "7z":return "application/x-7z-compressed";
             case "apk":return "application/vnd.android.package-archive";
-            
+
             default: return "";
         }
     }
