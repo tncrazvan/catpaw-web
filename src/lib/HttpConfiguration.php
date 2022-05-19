@@ -30,4 +30,16 @@ class HttpConfiguration {
 
     /** @var Parsedown Markdown parser */
     public Parsedown $mdp;
+
+    public function defaultCacheHeaders() {
+        return [
+            "Cache-Control" => "max-age=604800, public, must-revalidate, stale-while-revalidate=86400"
+        ];
+    }
+
+    /**
+     * Default headers for static assets.
+     * @var array
+     */
+    public array $headers = [];
 }
