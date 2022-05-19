@@ -28,18 +28,19 @@ class StartWebServer implements AttributeInterface {
      * @param array<string,array{file:string,key:string}> $pemCertificates  an array mapping domain names to pem certificates (file and key).
      */
     public function __construct(
-        public array|string       $interfaces = "127.0.0.1:8080",
+        public array|string $interfaces = "127.0.0.1:8080",
         public array|string|false $secureInterfaces = false,
-        public string             $webroot = 'public',
-        public bool               $showStackTrace = false,
-        public bool               $showExceptions = false,
-        public array              $pemCertificates = [],
+        public string $webroot = 'public',
+        public bool $showStackTrace = false,
+        public bool $showExceptions = false,
+        public array $pemCertificates = [],
+        public array $headers = [],
     ) {
     }
 
     #[Entry]
     public function main(LoggerInterface $logger): Promise {
-        return new LazyPromise(function () use ($logger) {
+        return new LazyPromise(function() use ($logger) {
             $config = new HttpConfiguration();
             $config->pemCertificates = [];
 

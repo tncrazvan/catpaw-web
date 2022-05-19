@@ -36,7 +36,7 @@ class PathParam implements AttributeInterface {
 
     public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
         /** @var false|HttpContext $http */
-        return new LazyPromise(function () use (
+        return new LazyPromise(function() use (
             $reflection,
             &$value,
             $http

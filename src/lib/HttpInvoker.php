@@ -48,8 +48,8 @@ class HttpInvoker {
      */
     public function __construct(
         private SessionOperationsInterface $sessionOperations,
-        private false|Response             $badRequestNoContentType = false,
-        private false|Response             $badRequestCantConsume = false,
+        private false|Response $badRequestNoContentType = false,
+        private false|Response $badRequestCantConsume = false,
     ) {
         if (!$this->badRequestNoContentType) {
             $this->badRequestNoContentType = new Response(Status::BAD_REQUEST, [], '');
@@ -70,9 +70,9 @@ class HttpInvoker {
      */
     public function invoke(
         Request $httpRequest,
-        string  $httpRequestMethod,
-        string  $httpRequestPath,
-        array   $httpRequestPathParameters,
+        string $httpRequestMethod,
+        string $httpRequestPath,
+        array $httpRequestPathParameters,
     ): Generator {
         /** @var HttpConfiguration $config */
         $httpConfiguration = yield Factory::create(HttpConfiguration::class);
@@ -117,13 +117,13 @@ class HttpInvoker {
      */
     private function next(
         HttpConfiguration $httpConfiguration,
-        Request           $httpRequest,
-        string            $httpRequestMethod,
-        string            $httpRequestPath,
-        array             $httpRequestPathParameters,
-        string            $httpRequestContentType,
-        Closure           $callback,
-        bool              $isMiddleware
+        Request $httpRequest,
+        string $httpRequestMethod,
+        string $httpRequestPath,
+        array $httpRequestPathParameters,
+        string $httpRequestContentType,
+        Closure $callback,
+        bool $isMiddleware
     ): Generator {
         if (!isset($this->cache[$httpRequestMethod][$httpRequestPath])) {
             $reflection = new ReflectionFunction($callback);
@@ -181,11 +181,11 @@ class HttpInvoker {
         $http = new class(sessionOperations: $this->sessionOperations, eventID: "$httpRequestMethod:$httpRequestPath", query: $query, params: $httpRequestPathParameters, request: $httpRequest, response: new Response(Status::OK, [], ''), ) extends HttpContext {
             public function __construct(
                 public SessionOperationsInterface $sessionOperations,
-                public string                     $eventID,
-                public array                      $params,
-                public array                      $query,
-                public Request                    $request,
-                public Response                   $response,
+                public string $eventID,
+                public array $params,
+                public array $query,
+                public Request $request,
+                public Response $response,
             ) {
             }
         };
@@ -231,9 +231,9 @@ class HttpInvoker {
      * @throws Throwable
      */
     private function response(
-        HttpContext    $http,
+        HttpContext $http,
         false|Produces $produces,
-        mixed          $value,
+        mixed $value,
     ): Response {
         if ($value instanceof Response) {
             foreach ($http->response->getHeaders() as $k => $v) {
@@ -258,10 +258,10 @@ class HttpInvoker {
     }
 
     private function adaptResponse(
-        HttpContext    $http,
+        HttpContext $http,
         false|Produces $produces,
-        mixed          $value,
-        bool           $ignoreValue = false
+        mixed $value,
+        bool $ignoreValue = false
     ): void {
         $any = false;
 
@@ -300,7 +300,7 @@ class HttpInvoker {
      */
     private function transformResponseBody(
         string $contentType,
-        mixed  $value,
+        mixed $value,
     ): string {
         return match ($contentType) {
             "application/json" => json_encode($value) ?? "",
@@ -325,31 +325,31 @@ class HttpInvoker {
             }
 
             public function handleHandshake(Gateway $gateway, Request $request, Response $response): Promise {
-                return call(function () use ($gateway, $request, $response) {
+                return call(function() use ($gateway, $request, $response) {
                     try {
-                        yield \Amp\call(fn () => $this->wsi->onStart($gateway));
+                        yield \Amp\call(fn() => $this->wsi->onStart($gateway));
                     } catch (Throwable $e) {
-                        yield \Amp\call(fn () => $this->wsi->onError($e));
+                        yield \Amp\call(fn() => $this->wsi->onError($e));
                     }
                     return new Success($response);
                 });
             }
 
             public function handleClient(Gateway $gateway, Client $client, Request $request, Response $response): Promise {
-                return call(function () use ($gateway, $client): Generator {
+                return call(function() use ($gateway, $client): Generator {
                     try {
                         while ($message = yield $client->receive()) {
-                            yield \Amp\call(fn () => $this->wsi->onMessage($message, $gateway, $client));
+                            yield \Amp\call(fn() => $this->wsi->onMessage($message, $gateway, $client));
                         }
 
                         try {
-                            $client->onClose(fn (...$args) => yield \Amp\call(fn () => $this->wsi->onClose(...$args)));
+                            $client->onClose(fn(...$args) => yield \Amp\call(fn() => $this->wsi->onClose(...$args)));
                         } catch (Throwable $e) {
-                            yield \Amp\call(fn () => $this->wsi->onError($e));
+                            yield \Amp\call(fn() => $this->wsi->onError($e));
                             $client->close(Code::ABNORMAL_CLOSE);
                         }
                     } catch (Throwable $e) {
-                        yield \Amp\call(fn () => $this->wsi->onError($e));
+                        yield \Amp\call(fn() => $this->wsi->onError($e));
                         $client->close(Code::ABNORMAL_CLOSE);
                     }
                 });
@@ -366,6 +366,6 @@ class HttpInvoker {
         Consumes $consumes,
     ): array {
         $consumed = $consumes->getContentType();
-        return array_filter($consumed, fn ($type) => !empty($type));
+        return array_filter($consumed, fn($type) => !empty($type));
     }
 }

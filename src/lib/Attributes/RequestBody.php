@@ -36,7 +36,7 @@ class RequestBody implements AttributeInterface {
 
     public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
         /** @var false|HttpContext $http */
-        return new LazyPromise(function () use (
+        return new LazyPromise(function() use (
             $reflection,
             &$value,
             $http
@@ -109,7 +109,7 @@ class RequestBody implements AttributeInterface {
 
 
     private function toIteratorStream(\Amp\Http\Server\RequestBody $body): IteratorStream {
-        return new IteratorStream(new Producer(function ($emit) use ($body) {
+        return new IteratorStream(new Producer(function($emit) use ($body) {
             while (null !== ($chunk = yield $body->read())) {
                 yield $emit($chunk);
             }

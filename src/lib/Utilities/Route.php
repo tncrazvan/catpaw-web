@@ -41,7 +41,7 @@ class Route {
      */
     private static function findPathPatterns(
         string $path,
-        array  $params
+        array $params
     ): Generator {
         $targets = [
             'pathParams' => [],
@@ -112,7 +112,7 @@ class Route {
 
         $piecesLen = count($localPieces);
 
-        return function (string $requestedPath) use ($targets, $localPieces, $piecesLen, $path) {
+        return function(string $requestedPath) use ($targets, $localPieces, $piecesLen, $path) {
             $variables = [];
             $offset = 0;
             $reconstructed = '';
@@ -156,8 +156,8 @@ class Route {
      * @return void
      */
     private static function initialize(
-        string        $method,
-        string        $path,
+        string $method,
+        string $path,
         array|Closure $callbacks,
     ): void {
         if (self::$routes[$method][$path] ?? false) {
@@ -182,12 +182,12 @@ class Route {
                 self::$patterns[$method][$path][] = self::findPathPatterns($path, $reflection->getParameters());
                 self::$routes[$method][$path][] = $callback;
                 //TODO refactor this attributes section
-                $parseAttributes = new LazyPromise(function () use ($method, $path, $isFilter, $reflection, $callback) {
+                $parseAttributes = new LazyPromise(function() use ($method, $path, $isFilter, $reflection, $callback) {
                     $context = new class(method: $method, path: $path, isFilter: $isFilter, ) extends RouteHandlerContext {
                         public function __construct(
                             public string $method,
                             public string $path,
-                            public bool   $isFilter,
+                            public bool $isFilter,
                         ) {
                         }
                     };
@@ -201,7 +201,7 @@ class Route {
                         }
                     }
                 });
-                $parseAttributes->onResolve(fn () => true);
+                $parseAttributes->onResolve(fn() => true);
             }
         } catch (ReflectionException $e) {
             die(Strings::red($e));

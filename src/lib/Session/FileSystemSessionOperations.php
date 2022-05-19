@@ -22,9 +22,9 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
      *                          unless the session has been inactive for <b>$ttl</b> time.
      */
     public function __construct(
-        private int    $ttl,
+        private int $ttl,
         private string $dirname,
-        private bool   $keepAlive,
+        private bool $keepAlive,
     ) {
         $this->dirname = preg_replace('/[\\/\\\]+(?=$)/', '', $this->dirname);
     }
@@ -35,7 +35,7 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
      * @inheritDoc
      */
     public function startSession(string $id): Promise {
-        return new LazyPromise(function () use ($id) {
+        return new LazyPromise(function() use ($id) {
             $session = Session::create();
             $filename = "$this->dirname/$id";
             if ((yield exists($filename))) {
@@ -68,7 +68,7 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
      * @inheritDoc
      */
     public function validateSession(string $id): Promise {
-        return new LazyPromise(function () use ($id) {
+        return new LazyPromise(function() use ($id) {
             try {
                 $time = time();
                 if ($id) {
@@ -107,7 +107,7 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
      * @inheritDoc
      */
     public function issetSession(string $id): Promise {
-        return new LazyPromise(function () use ($id) {
+        return new LazyPromise(function() use ($id) {
             return isset($this->sessions[$id]) || (yield exists("$this->dirname/$id"));
         });
     }
@@ -116,7 +116,7 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
      * @inheritDoc
      */
     public function setSession(Session $session): Promise {
-        return new LazyPromise(function () use ($session) {
+        return new LazyPromise(function() use ($session) {
             $this->sessions[$session->getId()] = $session;
             return true;
         });
@@ -126,7 +126,7 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
      * @inheritDoc
      */
     public function persistSession(string $id): Promise {
-        return new LazyPromise(function () use ($id) {
+        return new LazyPromise(function() use ($id) {
             if (!yield isDirectory($this->dirname)) {
                 yield createDirectoryRecursively($this->dirname);
             }
@@ -153,7 +153,7 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
      * @inheritDoc
      */
     public function removeSession(string $id): Promise {
-        return new LazyPromise(function () use ($id) {
+        return new LazyPromise(function() use ($id) {
             $filename = "$this->dirname/$id";
             if (yield exists($filename)) {
                 yield deleteFile($filename);
@@ -169,10 +169,10 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
      * @inheritDoc
      */
     public function makeSessionID(): Promise {
-        return new LazyPromise(function () {
+        return new LazyPromise(function() {
             $id = hash('sha3-224', rand());
             while (yield $this->issetSession($id)) {
-                $id = yield new LazyPromise(function () {
+                $id = yield new LazyPromise(function() {
                     return hash('sha3-224', rand());
                 });
             }

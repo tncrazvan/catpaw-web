@@ -84,7 +84,7 @@ class ByteRangeService {
                 headers       : $headers,
                 stringOrStream: new IteratorStream(
                     new Producer(
-                        function ($emit) use ($writer, $start, $end) {
+                        function($emit) use ($writer, $start, $end) {
                             if ($start === $end) {
                                 return;
                             }
@@ -113,7 +113,7 @@ class ByteRangeService {
             headers       : $headers,
             stringOrStream: new IteratorStream(
                 new Producer(
-                    function ($emit) use ($writer, $boundary, $ranges, $contentLength, $contentType) {
+                    function($emit) use ($writer, $boundary, $ranges, $contentLength, $contentType) {
                         yield $writer->start();
                         foreach ($ranges as $range) {
                             [$start, $end] = $range;

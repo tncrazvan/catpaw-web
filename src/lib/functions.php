@@ -23,7 +23,7 @@ use CatPaw\Web\Utilities\Mime;
 use Closure;
 
 function notfound(HttpConfiguration $config): Closure {
-    return function (
+    return function(
         #[RequestHeader("range")] false | array $range,
         Request $request,
         ByteRangeService $service,
@@ -72,14 +72,14 @@ function notfound(HttpConfiguration $config): Closure {
                         }
 
                         public function start(): Promise {
-                            return call(function () {
+                            return call(function() {
                                 $this->file = yield openFile($this->filename, "r");
                             });
                         }
 
 
                         public function data(callable $emit, int $start, int $length): Promise {
-                            return call(function () use ($emit, $start, $length) {
+                            return call(function() use ($emit, $start, $length) {
                                 yield $this->file->seek($start);
                                 $data = yield $this->file->read($length);
                                 yield $emit($data);
@@ -88,7 +88,7 @@ function notfound(HttpConfiguration $config): Closure {
 
 
                         public function end(): Promise {
-                            return new LazyPromise(function () {
+                            return new LazyPromise(function() {
                                 yield $this->file->close();
                             });
                         }
@@ -103,7 +103,7 @@ function notfound(HttpConfiguration $config): Closure {
                         "Content-Length" => $length,
                     ],
                     stringOrStream: new IteratorStream(
-                        new Producer(function ($emit) use ($filename) {
+                        new Producer(function($emit) use ($filename) {
                             /** @var File $file */
                             $file = yield openFile($filename, "r");
                             while ($chunk = yield $file->read(65536)) {

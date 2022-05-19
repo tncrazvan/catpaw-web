@@ -60,7 +60,7 @@ class WebServer {
     public static function start(
         HttpConfiguration|array $config
     ): Promise {
-        return call(function () use ($config) {
+        return call(function() use ($config) {
             Factory::setObject(HttpConfiguration::class, $config);
             if (self::$started) {
                 return;
@@ -142,14 +142,14 @@ class WebServer {
             $server = self::$httpServer = new HttpServer(
                 $sockets,
                 new CallableRequestHandler(
-                    static fn (Request $request) => static::serve($config, $request, $invoker)
+                    static fn(Request $request) => static::serve($config, $request, $invoker)
                 ),
                 $config->logger
             );
 
             $server->setErrorHandler(new class() implements \Amp\Http\Server\ErrorHandler {
                 public function handleError(int $statusCode, string $reason = null, Request $request = null): Promise {
-                    return new LazyPromise(function () use ($statusCode, $reason, $request) {
+                    return new LazyPromise(function() use ($statusCode, $reason, $request) {
                     });
                 }
             });
@@ -157,7 +157,7 @@ class WebServer {
 
             yield $server->start();
             if (DIRECTORY_SEPARATOR === '/') {
-                Loop::onSignal(\SIGINT, static function (string $watcherId) use ($server) {
+                Loop::onSignal(\SIGINT, static function(string $watcherId) use ($server) {
                     Loop::cancel($watcherId);
                     yield $server->stop();
                     Loop::stop();
@@ -172,7 +172,7 @@ class WebServer {
     }
 
     private static function markdown(HttpConfiguration $config, string $filename): Promise {
-        return new LazyPromise(function () use ($config, $filename) {
+        return new LazyPromise(function() use ($config, $filename) {
             //##############################################################
             $filenameLower = strtolower($config->httpWebroot.$filename);
             if (!str_ends_with($filenameLower, ".md")) {
