@@ -4,6 +4,6 @@
 		"bmewburn.vscode-intelephense-client",
         "emallin.phpunit",
         "getpsalm.psalm-vscode-plugin",
-        "emeraldwalk.RunOnSave"
+		"junstyle.php-cs-fixer"
 	]
 }
