@@ -177,6 +177,15 @@ function notfound(HttpConfiguration $config): Closure {
 }
 
 function cached(HttpConfiguration $config, Response $response): Response {
-    $response->setHeaders([$config->defaultCacheHeaders(),$config->headers]);
+    $headers = [];
+    foreach ($config->defaultCacheHeaders() as $key => $value) {
+        $headers[$key] = $value;
+    }
+
+    foreach ($config->headers as $key => $value) {
+        $headers[$key] = $value;
+    }
+
+    $response->setHeaders($headers);
     return $response;
 }
