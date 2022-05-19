@@ -41,9 +41,6 @@ use Throwable;
 class WebServer {
     private static $started = false;
 
-    private const MARKDOWN = 0;
-    private const HTML = 1;
-    private const OTHER = 2;
 
 
     private static false|HttpServer $httpServer = false;
@@ -169,53 +166,6 @@ class WebServer {
 
     public static function getHttpServer(): false|HttpServer {
         return self::$httpServer;
-    }
-
-    private static function markdown(HttpConfiguration $config, string $filename): Promise {
-        return new LazyPromise(function() use ($config, $filename) {
-            //##############################################################
-            $filenameLower = strtolower($config->httpWebroot.$filename);
-            if (!str_ends_with($filenameLower, ".md")) {
-                return $config->httpWebroot.$filename;
-            }
-            //##############################################################
-
-            $filenameMD = "./.cache/markdown$filename.html";
-            $filename = $config->httpWebroot.$filename;
-
-            if (is_file($filenameMD)) {
-                return $filenameMD;
-            }
-
-
-            if (!is_dir($dirnameMD = dirname($filenameMD))) {
-                mkdir($dirnameMD, 0777, true);
-            }
-
-            /** @var File $html */
-            $html = yield openFile($filename, "r");
-
-            $unsafe = !str_ends_with($filenameLower, ".unsafe.md");
-
-            $chunkSize = 65536;
-            $contents = '';
-
-            while (!$html->eof()) {
-                $chunk = yield $html->read($chunkSize);
-                $contents .= $chunk;
-            }
-            yield $html->close();
-            /** @var File $md */
-            $md = yield openFile($filenameMD, "w");
-
-            $config->mdp->setSafeMode($unsafe);
-            $parsed = $config->mdp->parse($contents);
-
-            yield $md->write($parsed);
-            yield $md->close();
-
-            return $filenameMD;
-        });
     }
 
     public static function init(HttpConfiguration $config): void {

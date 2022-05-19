@@ -22,12 +22,65 @@ use CatPaw\Web\Services\ByteRangeService;
 use CatPaw\Web\Utilities\Mime;
 use Closure;
 
+
+function markdown(HttpConfiguration $config, string $filename): Promise {
+    return call(function() use ($config, $filename) {
+        //##############################################################
+        $filenameLower = strtolower($config->httpWebroot.$filename);
+        if (!str_ends_with($filenameLower, ".md")) {
+            return $config->httpWebroot.$filename;
+        }
+        //##############################################################
+
+        $filenameMD = "./.cache/markdown$filename.html";
+        $filename = $config->httpWebroot.$filename;
+
+        if (is_file($filenameMD)) {
+            return $filenameMD;
+        }
+
+
+        if (!is_dir($dirnameMD = dirname($filenameMD))) {
+            mkdir($dirnameMD, 0777, true);
+        }
+
+        /** @var File $html */
+        $html = yield openFile($filename, "r");
+
+        $unsafe = !str_ends_with($filenameLower, ".unsafe.md");
+
+        $chunkSize = 65536;
+        $contents = '';
+
+        while (!$html->eof()) {
+            $chunk = yield $html->read($chunkSize);
+            $contents .= $chunk;
+        }
+        yield $html->close();
+        /** @var File $md */
+        $md = yield openFile($filenameMD, "w");
+
+        $config->mdp->setSafeMode($unsafe);
+        $parsed = $config->mdp->parse($contents);
+
+        yield $md->write($parsed);
+        yield $md->close();
+
+        return $filenameMD;
+    });
+}
+
+
 function notfound(HttpConfiguration $config): Closure {
+    $MARKDOWN = 0;
+    $HTML = 1;
+    $OTHER = 2;
+
     return function(
         #[RequestHeader("range")] false | array $range,
         Request $request,
         ByteRangeService $service,
-    ) use ($config) {
+    ) use ($config, $MARKDOWN, $HTML, $OTHER) {
         $path = urldecode($request->getUri()->getPath());
         $filename = $config->httpWebroot.$path;
         if (yield isDirectory($filename)) {
@@ -45,17 +98,17 @@ function notfound(HttpConfiguration $config): Closure {
         $lowered = strtolower($filename);
 
         if (str_ends_with($lowered, '.md')) {
-            $type = self::MARKDOWN;
+            $type = $MARKDOWN;
         } elseif (str_ends_with($lowered, '.html') || str_ends_with($lowered, ".htm")) {
-            $type = self::HTML;
+            $type = $HTML;
         } else {
-            $type = self::OTHER;
+            $type = $OTHER;
         }
 
         if (!strpos($filename, '../') && (yield exists($filename))) {
-            if (self::MARKDOWN === $type) {
+            if ($MARKDOWN === $type) {
                 /** @var string $filename */
-                $filename = yield self::markdown($config, $filename);
+                $filename = yield markdown($config, $filename);
             }
             $length = yield getSize($filename);
             try {
