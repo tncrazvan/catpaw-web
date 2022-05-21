@@ -21,7 +21,7 @@ use Amp\Promise;
 use Amp\Socket\BindContext;
 use Amp\Socket\Server;
 use Amp\Socket\ServerTlsContext;
-use CatPaw\Utilities\Factory;
+use CatPaw\Utilities\Container;
 use CatPaw\Utilities\Strings;
 use CatPaw\Web\Attributes\RequestHeader;
 use CatPaw\Web\Attributes\Session;
@@ -58,7 +58,7 @@ class WebServer {
         HttpConfiguration|array $config
     ): Promise {
         return call(function() use ($config) {
-            Factory::setObject(HttpConfiguration::class, $config);
+            Container::setObject(HttpConfiguration::class, $config);
             if (self::$started) {
                 return;
             }

@@ -42,7 +42,7 @@
     "amphp/file": "^2.0",
     "erusev/parsedown": "^1.7",
     "ext-mbstring": "*",
-    "catpaw/core": "^1.2"
+    "catpaw/core": "^1.3"
   },
   "autoload-dev":{
     "psr-4":{

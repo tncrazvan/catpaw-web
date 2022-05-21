@@ -15,7 +15,7 @@ use Amp\Websocket\Server\ClientHandler;
 use Amp\Websocket\Server\Gateway;
 use Amp\Websocket\Server\Websocket;
 use CatPaw\Utilities\Caster;
-use CatPaw\Utilities\Factory;
+use CatPaw\Utilities\Container;
 use CatPaw\Utilities\XMLSerializer;
 use CatPaw\Web\Attributes\Consumes;
 use CatPaw\Web\Attributes\Produces;
@@ -75,7 +75,7 @@ class HttpInvoker {
         array $httpRequestPathParameters,
     ): Generator {
         /** @var HttpConfiguration $config */
-        $httpConfiguration = yield Factory::create(HttpConfiguration::class);
+        $httpConfiguration = yield Container::create(HttpConfiguration::class);
         $httpRequestContentType = $httpRequest->getHeader("Content-Type") ?? '*/*';
         $callbacks = Route::$routes[$httpRequestMethod][$httpRequestPath];
         $len = count($callbacks);
@@ -192,7 +192,7 @@ class HttpInvoker {
 
         $parameters = [];
         try {
-            yield Factory::dependencies($reflection, $parameters, $http);
+            yield Container::dependencies($reflection, $parameters, $http);
         } catch (ContentTypeRejectedException $e) {
             $message = '';
             if ($httpConfiguration->httpShowExceptions) {
