@@ -2,7 +2,7 @@
 
 namespace CatPaw\Web\Attributes;
 
-use Amp\LazyPromise;
+use function Amp\call;
 use Amp\Promise;
 use Amp\Socket\Certificate;
 use Attribute;
@@ -11,9 +11,8 @@ use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Attributes\Traits\CoreAttributeDefinition;
 use CatPaw\Web\HttpConfiguration;
 use CatPaw\Web\WebServer;
-use JetBrains\PhpStorm\ArrayShape;
+
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 #[Attribute]
 class StartWebServer implements AttributeInterface {
@@ -39,24 +38,15 @@ class StartWebServer implements AttributeInterface {
     }
 
     #[Entry]
-    public function main(LoggerInterface $logger): Promise {
-        return new LazyPromise(function() use ($logger) {
-            $config = new HttpConfiguration();
-            $config->pemCertificates = [];
-
-            foreach ($this->pemCertificates as $domain => $cert) {
-                $file = $cert['file'] ?? '';
-                $key = $cert['key'] ?? '';
-                $config->pemCertificates[$domain] = new Certificate($file, $key);
-            }
-
-            $config->httpInterfaces = $this->interfaces;
-            $config->httpSecureInterfaces = $this->secureInterfaces;
-            $config->httpWebroot = $this->webroot;
-            $config->httpShowStackTrace = $this->showStackTrace;
-            $config->httpShowExceptions = $this->showExceptions;
-            $config->logger = $logger;
-            yield WebServer::start($config);
-        });
+    public function main(): Promise {
+        return call(fn() => yield WebServer::start(
+            interfaces: $this->interfaces,
+            secureInterfaces: $this->secureInterfaces,
+            webroot: $this->webroot,
+            showStackTrace: $this->showStackTrace,
+            showExceptions: $this->showExceptions,
+            pemCertificates: $this->pemCertificates,
+            headers: $this->headers,
+        ));
     }
 }

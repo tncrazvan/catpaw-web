@@ -19,9 +19,6 @@ class HttpConfiguration {
     /** @var array<string,Certificate> an array mapping domain names to pem certificates. */
     public array $pemCertificates = [];
 
-    /** @var false|LoggerInterface Application logger. */
-    public false|LoggerInterface $logger = false;
-
     /** @var bool This dictates if the stack trace should be shown to the client whenever an Exceptions is caught or not. */
     public bool $httpShowStackTrace = false;
 

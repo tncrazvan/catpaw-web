@@ -11,3 +11,4 @@
 /.idea/
 /.sessions/
 .php-cs-fixer.cache
+.phpunit.result.cache
