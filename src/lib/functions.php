@@ -3,7 +3,6 @@
 namespace CatPaw\Web;
 
 use Amp\ByteStream\IteratorStream;
-use Throwable;
 use function Amp\call;
 use function Amp\File\exists;
 use Amp\File\File;
@@ -22,174 +21,175 @@ use CatPaw\Web\Interfaces\ByteRangeWriterInterface;
 use CatPaw\Web\Services\ByteRangeService;
 use CatPaw\Web\Utilities\Mime;
 use Closure;
+use Throwable;
 
 
 function markdown(HttpConfiguration $config, string $filename): Promise {
-	return call(function() use ($config, $filename) {
-		//##############################################################
-		$filenameLower = strtolower($config->httpWebroot.$filename);
-		if(!str_ends_with($filenameLower, ".md")) {
-			return $config->httpWebroot.$filename;
-		}
-		//##############################################################
+    return call(function() use ($config, $filename) {
+        //##############################################################
+        $filenameLower = strtolower($config->httpWebroot.$filename);
+        if (!str_ends_with($filenameLower, ".md")) {
+            return $config->httpWebroot.$filename;
+        }
+        //##############################################################
 
-		$filenameMD = "./.cache/markdown$filename.html";
-		$filename = $config->httpWebroot.$filename;
+        $filenameMD = "./.cache/markdown$filename.html";
+        $filename = $config->httpWebroot.$filename;
 
-		if(is_file($filenameMD)) {
-			return $filenameMD;
-		}
+        if (is_file($filenameMD)) {
+            return $filenameMD;
+        }
 
 
-		if(!is_dir($dirnameMD = dirname($filenameMD))) {
-			mkdir($dirnameMD, 0777, true);
-		}
+        if (!is_dir($dirnameMD = dirname($filenameMD))) {
+            mkdir($dirnameMD, 0777, true);
+        }
 
-		/** @var File $html */
-		$html = yield openFile($filename, "r");
+        /** @var File $html */
+        $html = yield openFile($filename, "r");
 
-		$unsafe = !str_ends_with($filenameLower, ".unsafe.md");
+        $unsafe = !str_ends_with($filenameLower, ".unsafe.md");
 
-		$chunkSize = 65536;
-		$contents = '';
+        $chunkSize = 65536;
+        $contents = '';
 
-		while(!$html->eof()) {
-			$chunk = yield $html->read($chunkSize);
-			$contents .= $chunk;
-		}
-		yield $html->close();
-		/** @var File $md */
-		$md = yield openFile($filenameMD, "w");
+        while (!$html->eof()) {
+            $chunk = yield $html->read($chunkSize);
+            $contents .= $chunk;
+        }
+        yield $html->close();
+        /** @var File $md */
+        $md = yield openFile($filenameMD, "w");
 
-		$config->mdp->setSafeMode($unsafe);
-		$parsed = $config->mdp->parse($contents);
+        $config->mdp->setSafeMode($unsafe);
+        $parsed = $config->mdp->parse($contents);
 
-		yield $md->write($parsed);
-		yield $md->close();
+        yield $md->write($parsed);
+        yield $md->close();
 
-		return $filenameMD;
-	});
+        return $filenameMD;
+    });
 }
 
 
 function notfound(HttpConfiguration $config): Closure {
-	$MARKDOWN = 0;
-	$HTML = 1;
-	$OTHER = 2;
+    $MARKDOWN = 0;
+    $HTML = 1;
+    $OTHER = 2;
 
-	return function(
-		#[RequestHeader("range")] false|array $range,
-		Request                               $request,
-		ByteRangeService                      $service,
-	) use ($config, $MARKDOWN, $HTML, $OTHER) {
-		$path = urldecode($request->getUri()->getPath());
-		$filename = $config->httpWebroot.$path;
-		if(yield isDirectory($filename)) {
-			if(!str_ends_with($filename, '/')) {
-				$filename .= '/';
-			}
+    return function(
+        #[RequestHeader("range")] false | array $range,
+        Request $request,
+        ByteRangeService $service,
+    ) use ($config, $MARKDOWN, $HTML, $OTHER) {
+        $path = urldecode($request->getUri()->getPath());
+        $filename = $config->httpWebroot.$path;
+        if (yield isDirectory($filename)) {
+            if (!str_ends_with($filename, '/')) {
+                $filename .= '/';
+            }
 
-			if(yield exists("{$filename}index.md")) {
-				$filename .= 'index.md';
-			} else {
-				$filename .= 'index.html';
-			}
-		}
+            if (yield exists("{$filename}index.md")) {
+                $filename .= 'index.md';
+            } else {
+                $filename .= 'index.html';
+            }
+        }
 
-		$lowered = strtolower($filename);
+        $lowered = strtolower($filename);
 
-		if(str_ends_with($lowered, '.md')) {
-			$type = $MARKDOWN;
-		} elseif(str_ends_with($lowered, '.html') || str_ends_with($lowered, ".htm")) {
-			$type = $HTML;
-		} else {
-			$type = $OTHER;
-		}
+        if (str_ends_with($lowered, '.md')) {
+            $type = $MARKDOWN;
+        } elseif (str_ends_with($lowered, '.html') || str_ends_with($lowered, ".htm")) {
+            $type = $HTML;
+        } else {
+            $type = $OTHER;
+        }
 
-		if(!strpos($filename, '../') && (yield exists($filename))) {
-			if($MARKDOWN === $type) {
-				/** @var string $filename */
-				$filename = yield markdown($config, $filename);
-			}
-			$length = yield getSize($filename);
-			try {
-				return cached($config, $service->response(
-					rangeQuery: $range[0]??"",
-					headers   : [
-									"Content-Type"   => Mime::getContentType($filename),
-									"Content-Length" => $length,
-								],
-					writer    : new class($filename) implements ByteRangeWriterInterface {
-									private File $file;
+        if (!strpos($filename, '../') && (yield exists($filename))) {
+            if ($MARKDOWN === $type) {
+                /** @var string $filename */
+                $filename = yield markdown($config, $filename);
+            }
+            $length = yield getSize($filename);
+            try {
+                return cached($config, $service->response(
+                    rangeQuery: $range[0] ?? "",
+                    headers   : [
+                        "Content-Type" => Mime::getContentType($filename),
+                        "Content-Length" => $length,
+                    ],
+                    writer    : new class($filename) implements ByteRangeWriterInterface {
+                        private File $file;
 
-									public function __construct(private string $filename) {
-									}
+                        public function __construct(private string $filename) {
+                        }
 
-									public function start(): Promise {
-										return call(function() {
-											$this->file = yield openFile($this->filename, "r");
-										});
-									}
-
-
-									public function data(callable $emit, int $start, int $length): Promise {
-										return call(function() use ($emit, $start, $length) {
-											yield $this->file->seek($start);
-											$data = yield $this->file->read($length);
-											yield $emit($data);
-										});
-									}
+                        public function start(): Promise {
+                            return call(function() {
+                                $this->file = yield openFile($this->filename, "r");
+                            });
+                        }
 
 
-									public function end(): Promise {
-										return new LazyPromise(function() {
-											yield $this->file->close();
-										});
-									}
-								}
-				));
-			} catch(InvalidByteRangeQueryException) {
-				return cached($config, new Response(
-					code          : Status::OK,
-					headers       : [
-										"accept-ranges"  => "bytes",
-										"Content-Type"   => Mime::getContentType($filename),
-										"Content-Length" => $length,
-									],
-					stringOrStream: new IteratorStream(
-										new Producer(function($emit) use ($filename) {
-											/** @var File $file */
-											$file = yield openFile($filename, "r");
-											while($chunk = yield $file->read(65536)) {
-												yield $emit($chunk);
-											}
-											yield $file->close();
-										})
-									)
-				));
-			}
-		}
-		return cached($config, new Response(
-			Status::NOT_FOUND,
-			[],
-			''
-		));
-	};
+                        public function data(callable $emit, int $start, int $length): Promise {
+                            return call(function() use ($emit, $start, $length) {
+                                yield $this->file->seek($start);
+                                $data = yield $this->file->read($length);
+                                yield $emit($data);
+                            });
+                        }
+
+
+                        public function end(): Promise {
+                            return new LazyPromise(function() {
+                                yield $this->file->close();
+                            });
+                        }
+                    }
+                ));
+            } catch (InvalidByteRangeQueryException) {
+                return cached($config, new Response(
+                    code          : Status::OK,
+                    headers       : [
+                        "Accept-Ranges" => "bytes",
+                        "Content-Type" => Mime::getContentType($filename),
+                        "Content-Length" => $length,
+                    ],
+                    stringOrStream: new IteratorStream(
+                        new Producer(function($emit) use ($filename) {
+                                            /** @var File $file */
+                                            $file = yield openFile($filename, "r");
+                                            while ($chunk = yield $file->read(65536)) {
+                                                yield $emit($chunk);
+                                            }
+                                            yield $file->close();
+                                        })
+                    )
+                ));
+            }
+        }
+        return cached($config, new Response(
+            Status::NOT_FOUND,
+            [],
+            ''
+        ));
+    };
 }
 
 /**
  * @throws Throwable
  */
 function cached(HttpConfiguration $config, Response $response): Response {
-	$headers = [];
-	foreach($config->defaultCacheHeaders() as $key => $value) {
-		$headers[$key] = $value;
-	}
+    $headers = [];
+    foreach ($config->defaultCacheHeaders() as $key => $value) {
+        $headers[$key] = $value;
+    }
 
-	foreach($config->headers as $key => $value) {
-		$headers[$key] = $value;
-	}
+    foreach ($config->headers as $key => $value) {
+        $headers[$key] = $value;
+    }
 
-	$response->setHeaders($headers);
-	return $response;
+    $response->setHeaders($headers);
+    return $response;
 }

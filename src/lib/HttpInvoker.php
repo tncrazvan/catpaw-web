@@ -2,6 +2,9 @@
 
 namespace CatPaw\Web;
 
+use function Amp\ByteStream\buffer;
+use Amp\ByteStream\InputStream;
+
 use function Amp\call;
 use Amp\Http\Server\Request;
 use Amp\Http\Server\Response;
@@ -92,7 +95,7 @@ class HttpInvoker {
         }
 
         /** @var HttpContext $http */
-        $context = new class(sessionOperations: $this->sessionOperations, eventID: "$httpRequestMethod:$httpRequestPath", query: $query, params: $httpRequestPathParameters, request: $httpRequest, response: new Response()) extends HttpContext {
+        $context = new class(sessionOperations: $this->sessionOperations, eventID: "$httpRequestMethod:$httpRequestPath", query: $query, params: $httpRequestPathParameters, request: $httpRequest, response: new Response(), prepared: false) extends HttpContext {
             public function __construct(
                 public SessionOperationsInterface $sessionOperations,
                 public string $eventID,
@@ -100,6 +103,8 @@ class HttpInvoker {
                 public array $query,
                 public Request $request,
                 public Response $response,
+                /** @var mixed|InputStream */
+                public mixed $prepared,
             ) {
             }
         };
@@ -134,13 +139,12 @@ class HttpInvoker {
         foreach ($acceptables as $acceptable) {
             if (str_starts_with($acceptable, "*/*")) {
                 $context->response->setHeader("Content-Type", $produced[0]);
+                $this->transform($context, $produced[0]);
                 return;
             }
             if (in_array($acceptable, $produced)) {
-                if ($context->response) {
-                    $context->response->setBody($this->transform($acceptable, $context->response));
-                }
                 $context->response->setHeader("Content-Type", $acceptable);
+                $this->transform($context, $acceptable);
                 return;
             }
         }
@@ -152,24 +156,29 @@ class HttpInvoker {
      * @return string
      */
     private function transform(
+        HttpContext $context,
         string $contentType,
-        mixed $value,
-    ): string {
-        return match ($contentType) {
-            "application/json" => json_encode($value) ?? "",
-            "application/xml", "text/xml" => is_array($value)
-                ? XMLSerializer::generateValidXmlFromArray($value) ?? ""
-                : (is_object($value)
-                    ? (
-                        XMLSerializer::generateValidXmlFromObj(
-                            Caster::cast($value, stdClass::class)
-                        ) ?? ""
-                    )
-                    : XMLSerializer::generateValidXmlFromArray([$value]) ?? ""),
-            default => is_array($value) || is_object($value)
-                ? json_encode($value) ?? ""
-                : $value ?? ""
-        };
+    ): void {
+        if ($context->prepared instanceof InputStream || $context->prepared instanceof Websocket) {
+            $context->response->setBody($context->prepared);
+            return;
+        }
+
+        $context->response->setBody(
+            match ($contentType) {
+                'application/json' => json_encode($context->prepared),
+                'application/xml', 'text/xml' => is_array($context->prepared)
+                ? XMLSerializer::generateValidXmlFromArray($$context->prepared) ?? ""
+                : (is_object($context->prepared)
+                ? (
+                    XMLSerializer::generateValidXmlFromObj(
+                        Caster::cast($$context->prepared, stdClass::class)
+                    ) ?? ""
+                )
+                : XMLSerializer::generateValidXmlFromArray([$$context->prepared]) ?? ""),
+                default => $context->prepared
+            }
+        );
     }
 
     private array $cache = [];
@@ -262,6 +271,7 @@ class HttpInvoker {
             return true;
         }
         
+        /** @var WebSocketInterface|Response|string|int|float|bool */
         $response = yield \Amp\call($callback, ...$dependencies);
 
         if (($sessionIDCookie = $context->response->getCookie("session-id") ?? false)) {
@@ -275,9 +285,11 @@ class HttpInvoker {
 
         if ($response instanceof WebSocketInterface) {
             $context->response = $this->websocket($response)->handleRequest($context->request);
+            $context->prepared = $$context->response->getBody();
         } else {
             if (!$response instanceof Response) {
-                $context->response->setBody($response);
+                // $context->response->setBody($response);
+                $context->prepared = $response;
             } else {
                 /** @var Response $response */
                 foreach ($response->getHeaders() as $key => $value) {
@@ -285,7 +297,8 @@ class HttpInvoker {
                 }
                 
                 $context->response->setStatus($response->getStatus());
-                $context->response->setBody($response->getBody());
+                // $context->response->setBody($response->getBody());
+                $context->prepared = $response->getBody();
             }
         }
         return true;

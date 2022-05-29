@@ -93,7 +93,7 @@ class Route {
                             $pathParam->setRegex('/^[-+]?[0-9]+\.[0-9]+$/');
                             break;
                         case 'string':
-                            $pathParam->setRegex('/^.+$/');
+                            $pathParam->setRegex('/^[^\/]+$/');
                             break;
                         case 'bool':
                             $pathParam->setRegex('/^(0|1|no?|y(es)?|false|true)$/');
