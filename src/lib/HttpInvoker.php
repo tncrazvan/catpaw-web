@@ -2,6 +2,7 @@
 
 namespace CatPaw\Web;
 
+use function Amp\call;
 use Amp\Http\Server\Request;
 use Amp\Http\Server\Response;
 use Amp\Http\Status;
@@ -23,364 +24,318 @@ use CatPaw\Web\Session\SessionOperationsInterface;
 use CatPaw\Web\Utilities\Route;
 use Closure;
 use Exception;
-use Generator;
-use ReflectionException;
-use ReflectionFunction;
-use SplFixedArray;
-use stdClass;
-use Throwable;
-use function Amp\call;
 use function explode;
+use Generator;
 use function implode;
 use function in_array;
 use function is_array;
 use function is_object;
 use function json_encode;
+use ReflectionException;
+use ReflectionFunction;
+use SplFixedArray;
+use stdClass;
+use Throwable;
 
 class HttpInvoker {
-	/**
-	 * @param SessionOperationsInterface $sessionOperations
-	 * @param false|Response             $badRequestNoContentType
-	 * @param false|Response             $badRequestCantConsume
-	 */
-	public function __construct(
-		private SessionOperationsInterface $sessionOperations,
-		private false|Response             $badRequestNoContentType = false,
-		private false|Response             $badRequestCantConsume = false,
-	) {
-		if(!$this->badRequestNoContentType) {
-			$this->badRequestNoContentType = new Response(Status::BAD_REQUEST, [], '');
-		}
-		if(!$this->badRequestCantConsume) {
-			$this->badRequestCantConsume = new Response(Status::BAD_REQUEST, [], '');
-		}
-	}
+    /**
+     * @param SessionOperationsInterface $sessionOperations
+     * @param false|Response             $badRequestNoContentType
+     * @param false|Response             $badRequestCantConsume
+     */
+    public function __construct(
+        private SessionOperationsInterface $sessionOperations,
+        private false|Response $badRequestNoContentType = false,
+        private false|Response $badRequestCantConsume = false,
+    ) {
+        if (!$this->badRequestNoContentType) {
+            $this->badRequestNoContentType = new Response(Status::BAD_REQUEST, [], '');
+        }
+        if (!$this->badRequestCantConsume) {
+            $this->badRequestCantConsume = new Response(Status::BAD_REQUEST, [], '');
+        }
+    }
 
-	/**
-	 * @param Request $httpRequest
-	 * @param string  $httpRequestPath
-	 * @param string  $httpRequestMethod
-	 * @param array   $httpRequestPathParameters
-	 * @return Generator
-	 * @throws Throwable
-	 * @throws ReflectionException
-	 */
-	public function invoke(
-		Request $httpRequest,
-		string  $httpRequestMethod,
-		string  $httpRequestPath,
-		array   $httpRequestPathParameters,
-	): Generator {
-		/** @var HttpConfiguration $config */
-		$httpConfiguration = yield Container::create(HttpConfiguration::class);
-		$httpRequestContentType = $httpRequest->getHeader("Content-Type")??'*/*';
-		$callbacks = Route::findRoute($httpRequestMethod, $httpRequestPath);
-		$len = count($callbacks);
-
-
-		$queryChunks = explode('&', preg_replace('/^\?/', '', $httpRequest->getUri()->getQuery(), 1));
-		$query = [];
-
-		foreach($queryChunks as $chunk) {
-			$split = explode('=', $chunk);
-			$len = count($split);
-			if(2 === $len) {
-				$query[urldecode($split[0])] = urldecode($split[1]);
-			} elseif(1 === $len && '' !== $split[0]) {
-				$query[urldecode($split[0])] = true;
-			}
-		}
-
-		/** @var HttpContext $http */
-		$httpContext = new class(
-			sessionOperations: $this->sessionOperations,
-			eventID          : "$httpRequestMethod:$httpRequestPath",
-			query            : $query,
-			params           : $httpRequestPathParameters,
-			request          : $httpRequest,
-			response         : new Response(),
-		) extends HttpContext {
-			public function __construct(
-				public SessionOperationsInterface $sessionOperations,
-				public string                     $eventID,
-				public array                      $params,
-				public array                      $query,
-				public Request                    $request,
-				public Response                   $response,
-			) {
-			}
-		};
+    /**
+     * @param  Request             $httpRequest
+     * @param  string              $httpRequestPath
+     * @param  string              $httpRequestMethod
+     * @param  array               $httpRequestPathParameters
+     * @throws Throwable
+     * @throws ReflectionException
+     * @return Generator
+     */
+    public function invoke(
+        Request $httpRequest,
+        string $httpRequestMethod,
+        string $httpRequestPath,
+        array $httpRequestPathParameters,
+    ): Generator {
+        /** @var HttpConfiguration $config */
+        $httpConfiguration = yield Container::create(HttpConfiguration::class);
+        $httpRequestContentType = $httpRequest->getHeader("Content-Type") ?? '*/*';
+        $callbacks = Route::findRoute($httpRequestMethod, $httpRequestPath);
+        $len = count($callbacks);
 
 
-		for($i = 0; $i < $len; $i++) {
-			/** @var true|Response $httpResponse */
-			$httpResponse = yield from $this->next(
-				httpConfiguration     : $httpConfiguration,
-				httpContext           : $httpContext,
-				httpRequest           : $httpRequest,
-				httpRequestMethod     : $httpRequestMethod,
-				httpRequestPath       : $httpRequestPath,
-				httpRequestContentType: $httpRequestContentType,
-				callback              : $callbacks[$i],
-				isMiddleware          : $i < $len - 1
-			);
+        $queryChunks = explode('&', preg_replace('/^\?/', '', $httpRequest->getUri()->getQuery(), 1));
+        $query = [];
 
-			if(true !== $httpResponse) {
-				return $httpResponse;
-			}
-		}
-	}
+        foreach ($queryChunks as $chunk) {
+            $split = explode('=', $chunk);
+            $len = count($split);
+            if (2 === $len) {
+                $query[urldecode($split[0])] = urldecode($split[1]);
+            } elseif (1 === $len && '' !== $split[0]) {
+                $query[urldecode($split[0])] = true;
+            }
+        }
 
-	private array $cache = [];
-	private const REFLECTION = 0;
-	private const CONSUMES   = 1;
-	private const PRODUCES   = 2;
-
-	/**
-	 * @param HttpConfiguration $httpConfiguration
-	 * @param HttpContext       $httpContext
-	 * @param Request           $httpRequest
-	 * @param string            $httpRequestMethod
-	 * @param string            $httpRequestPath
-	 * @param string            $httpRequestContentType
-	 * @param Closure           $callback
-	 * @param bool              $isMiddleware
-	 * @return Generator
-	 * @throws ReflectionException
-	 * @throws Throwable
-	 */
-	private function next(
-		HttpConfiguration $httpConfiguration,
-		HttpContext       $httpContext,
-		Request           $httpRequest,
-		string            $httpRequestMethod,
-		string            $httpRequestPath,
-		string            $httpRequestContentType,
-		Closure           $callback,
-		bool              $isMiddleware
-	): Generator {
-		if(!isset($this->cache[$httpRequestMethod][$httpRequestPath])) {
-			$reflection = new ReflectionFunction($callback);
-			$consumes = yield Consumes::findByFunction($reflection);
-			$produces = yield Produces::findByFunction($reflection);
-
-			$this->cache[$httpRequestMethod][$httpRequestPath] = new SplFixedArray(3);
-
-			$this->cache[$httpRequestMethod][$httpRequestPath][self::REFLECTION] = $reflection;
-			$this->cache[$httpRequestMethod][$httpRequestPath][self::CONSUMES] = $consumes;
-			$this->cache[$httpRequestMethod][$httpRequestPath][self::PRODUCES] = $produces;
-		}
-
-		/** @var ReflectionFunction $reflection */
-		$reflection = $this->cache[$httpRequestMethod][$httpRequestPath][self::REFLECTION];
-		/** @var Consumes $consumes */
-		$consumes = $this->cache[$httpRequestMethod][$httpRequestPath][self::CONSUMES];
-		/** @var Produces $produces */
-		$produces = $this->cache[$httpRequestMethod][$httpRequestPath][self::PRODUCES];
+        /** @var HttpContext $http */
+        $context = new class(sessionOperations: $this->sessionOperations, eventID: "$httpRequestMethod:$httpRequestPath", query: $query, params: $httpRequestPathParameters, request: $httpRequest, response: new Response()) extends HttpContext {
+            public function __construct(
+                public SessionOperationsInterface $sessionOperations,
+                public string $eventID,
+                public array $params,
+                public array $query,
+                public Request $request,
+                public Response $response,
+            ) {
+            }
+        };
 
 
-		/** @var false|Consumes $produces */
-		if($consumes) {
-			$consumables = $this->filterConsumedContentType($consumes);
-			$canConsume = false;
-			foreach($consumables as $consumesItem) {
-				if($httpRequestContentType === $consumesItem) {
-					$canConsume = true;
-					break;
-				}
-			}
-			if(!$canConsume) {
-				$consumableString = implode(',', $consumables);
-				throw new Exception(
-					message: "Bad request on '$httpRequestMethod $httpRequestPath', "
-							 ."can only consume Content-Type '$consumableString'; provided '$httpRequestContentType'."
-				);
-			}
-		}
+        for ($i = 0; $i < $len; $i++) {
+            $continue = yield from $this->next(
+                configuration: $httpConfiguration,
+                context: $context,
+                requestMethod: $httpRequestMethod,
+                requestPath: $httpRequestPath,
+                requestContentType: $httpRequestContentType,
+                index: $i,
+                callback: $callbacks[$i],
+            );
+
+            if (!$continue && $len > $i + 1) {
+                //a filter just interrupted the response.
+                $this->contextualize($context);
+                return $context->response;
+            }
+        }
+
+        $this->contextualize($context);
+        return $context->response;
+    }
+
+    private function contextualize(HttpContext $context) {
+        $acceptables = explode(",", $context->request->getHeader("Accept") ?? "text/plain");
+        $produced = [$context->response->getHeader("content-type") ?? "text/plain"];
+
+        foreach ($acceptables as $acceptable) {
+            if (str_starts_with($acceptable, "*/*")) {
+                $context->response->setHeader("Content-Type", $produced[0]);
+                return;
+            }
+            if (in_array($acceptable, $produced)) {
+                if ($context->response) {
+                    $context->response->setBody($this->transform($acceptable, $context->response));
+                }
+                $context->response->setHeader("Content-Type", $acceptable);
+                return;
+            }
+        }
+    }
+
+    /**
+     * @param  string $contentType
+     * @param  mixed  $value
+     * @return string
+     */
+    private function transform(
+        string $contentType,
+        mixed $value,
+    ): string {
+        return match ($contentType) {
+            "application/json" => json_encode($value) ?? "",
+            "application/xml", "text/xml" => is_array($value)
+                ? XMLSerializer::generateValidXmlFromArray($value) ?? ""
+                : (is_object($value)
+                    ? (
+                        XMLSerializer::generateValidXmlFromObj(
+                            Caster::cast($value, stdClass::class)
+                        ) ?? ""
+                    )
+                    : XMLSerializer::generateValidXmlFromArray([$value]) ?? ""),
+            default => is_array($value) || is_object($value)
+                ? json_encode($value) ?? ""
+                : $value ?? ""
+        };
+    }
+
+    private array $cache = [];
+    private const REFLECTION = 0;
+    private const CONSUMES = 1;
+    private const PRODUCES = 2;
+
+    /**
+     * @param  HttpConfiguration   $configuration
+     * @param  HttpContext         $context
+     * @param  string              $requestMethod
+     * @param  string              $requestPath
+     * @param  string              $requestContentType
+     * @param  Closure             $callback
+     * @param  bool                $isMiddleware
+     * @throws ReflectionException
+     * @throws Throwable
+     * @return Generator
+     */
+    private function next(
+        HttpConfiguration $configuration,
+        HttpContext $context,
+        string $requestMethod,
+        string $requestPath,
+        string $requestContentType,
+        int $index,
+        Closure $callback,
+    ): Generator {
+        if (!isset($this->cache[$requestMethod][$requestPath])) {
+            $reflection = new ReflectionFunction($callback);
+            $consumes = yield Consumes::findByFunction($reflection);
+            $produces = yield Produces::findByFunction($reflection);
+
+            $this->cache[$requestMethod][$requestPath] = new SplFixedArray(3);
+
+            $this->cache[$requestMethod][$requestPath][self::REFLECTION] = $reflection;
+            $this->cache[$requestMethod][$requestPath][self::CONSUMES] = $consumes;
+            $this->cache[$requestMethod][$requestPath][self::PRODUCES] = $produces;
+        }
+
+        /** @var ReflectionFunction $reflection */
+        $reflection = $this->cache[$requestMethod][$requestPath][self::REFLECTION];
+        /** @var Consumes $consumes */
+        $consumes = $this->cache[$requestMethod][$requestPath][self::CONSUMES];
+        /** @var Produces $produces */
+        $produces = $this->cache[$requestMethod][$requestPath][self::PRODUCES];
 
 
-		try {
-			$parameters = yield Container::dependencies($reflection, [
-				"id"      => [$httpContext->request->getMethod(), $httpContext->request->getUri()->getPath()],
-				"force"   => [
-					Request::class  => $httpContext->request,
-					Response::class => $httpContext->response,
-				],
-				"context" => $httpContext,
-			]);
-		} catch(ContentTypeRejectedException $e) {
-			$message = '';
-			if($httpConfiguration->httpShowExceptions) {
-				$message .= $e->getMessage();
-				if($httpConfiguration->httpShowStackTrace) {
-					$message .= PHP_EOL.$e->getTraceAsString();
-				}
-			}
-			echo $e->getMessage().PHP_EOL.$e->getTraceAsString().PHP_EOL;
-			return new Response(Status::BAD_REQUEST, [], $message);
-		}
+        /** @var false|Consumes $produces */
+        if ($consumes) {
+            $consumables = $this->filterConsumedContentType($consumes);
+            $isConsumable = false;
+
+            foreach ($consumables as $consumable) {
+                if ($requestContentType === $consumable) {
+                    $isConsumable = true;
+                    break;
+                }
+            }
+
+            if (!$isConsumable) {
+                $consumableString = implode(',', $consumables);
+                throw new Exception(
+                    message: "Bad request on '$requestMethod $requestPath', "
+                        ."can only consume Content-Type '$consumableString'; provided '$requestContentType'."
+                );
+            }
+        }
 
 
-		$value = yield \Amp\call($callback, ...$parameters);
+        try {
+            $dependencies = yield Container::dependencies($reflection, [
+                "id" => ["$index#".$context->request->getMethod(), $context->request->getUri()->getPath()],
+                "force" => [
+                    Request::class => $context->request,
+                    Response::class => $context->response,
+                ],
+                "context" => $context,
+            ]);
+        } catch (ContentTypeRejectedException $e) {
+            $message = '';
+            if ($configuration->httpShowExceptions) {
+                $message .= $e->getMessage();
+                if ($configuration->httpShowStackTrace) {
+                    $message .= PHP_EOL.$e->getTraceAsString();
+                }
+            }
+            echo $e->getMessage().PHP_EOL.$e->getTraceAsString().PHP_EOL;
+            $context->response = new Response(Status::BAD_REQUEST, [], $message);
+            return true;
+        }
+        
+        $response = yield \Amp\call($callback, ...$dependencies);
 
-		if(($sessionIDCookie = $httpContext->response->getCookie("session-id")??false)) {
-			yield $this->sessionOperations->persistSession($sessionIDCookie->getValue());
-		}
-
-		if($isMiddleware && true === $value) {
-			return true;
-		}
-
-		if($value instanceof WebSocketInterface) {
-			return $this->websocket($value)->handleRequest($httpRequest);
-		}
-
-		return $this->response(
-			httpContext: $httpContext,
-			produces   : $produces,
-			value      : $value,
-		);
-	}
-
-	/**
-	 * @throws Throwable
-	 */
-	private function response(
-		HttpContext    $httpContext,
-		false|Produces $produces,
-		mixed          $value,
-	): Response {
-		if($value instanceof Response) {
-			foreach($httpContext->response->getHeaders() as $k => $v) {
-				if(!$value->hasHeader($k)) {
-					$value->setHeader($k, $v);
-				}
-			}
-
-			foreach($httpContext->response->getCookies() as $cookie) {
-				$value->setCookie($cookie);
-			}
-
-			$value->setStatus($value->getStatus());
-
-			$httpContext->response = $value;
-			$this->adaptResponse($httpContext, $produces, false, true);
-		} else {
-			$this->adaptResponse($httpContext, $produces, $value);
-		}
-
-		return $httpContext->response;
-	}
-
-	private function adaptResponse(
-		HttpContext    $httpContext,
-		false|Produces $produces,
-		mixed          $value,
-		bool           $ignoreValue = false
-	): void {
-		$any = false;
-
-		$acceptable = explode(",", $httpContext->request->getHeader("Accept")??"text/plain");
-		$producedContentTypes = $produces ? $produces->getContentType() : [$httpContext->response->getHeader("content-type")??"text/plain"];
+        if (($sessionIDCookie = $context->response->getCookie("session-id") ?? false)) {
+            yield $this->sessionOperations->persistSession($sessionIDCookie->getValue());
+        }
 
 
-		foreach($acceptable as $acceptableContentType) {
-			if(str_starts_with($acceptableContentType, "*/*")) {
-				$any = true;
-				continue;
-			}
-			if(in_array($acceptableContentType, $producedContentTypes)) {
-				if($value) {
-					$httpContext->response->setBody($this->transformResponseBody($acceptableContentType, $value));
-				}
+        if (!$response) {
+            return false;
+        }
 
-				$httpContext->response->setHeader("Content-Type", $acceptableContentType);
-				return;
-			}
-		}
+        if ($response instanceof WebSocketInterface) {
+            $context->response = $this->websocket($response)->handleRequest($context->request);
+        } else {
+            if (!$response instanceof Response) {
+                $context->response->setBody($response);
+            } else {
+                /** @var Response $response */
+                foreach ($response->getHeaders() as $key => $value) {
+                    $context->response->setHeader($key, $value);
+                }
+                
+                $context->response->setStatus($response->getStatus());
+                $context->response->setBody($response->getBody());
+            }
+        }
+        return true;
+    }
 
+    private function websocket(WebSocketInterface $wsi): Websocket {
+        $websocket = new Websocket(new class($wsi) implements ClientHandler {
+            public function __construct(private WebSocketInterface $wsi) {
+            }
 
-		if($any) {
-			if(!$ignoreValue) {
-				$httpContext->response->setBody($this->transformResponseBody($producedContentTypes[0], $value));
-			}
-			$httpContext->response->setHeader("Content-Type", $producedContentTypes[0]);
-		}
-	}
+            public function handleHandshake(Gateway $gateway, Request $request, Response $response): Promise {
+                return call(function() use ($gateway, $request, $response) {
+                    try {
+                        yield \Amp\call(fn() => $this->wsi->onStart($gateway));
+                    } catch (Throwable $e) {
+                        yield \Amp\call(fn() => $this->wsi->onError($e));
+                    }
+                    return new Success($response);
+                });
+            }
 
-	/**
-	 * @param string $contentType
-	 * @param mixed  $value
-	 * @return string
-	 */
-	private function transformResponseBody(
-		string $contentType,
-		mixed  $value,
-	): string {
-		return match ($contentType) {
-			"application/json"            => json_encode($value)??"",
-			"application/xml", "text/xml" => is_array($value)
-				? XMLSerializer::generateValidXmlFromArray($value)??""
-				: (is_object($value)
-					? (
-						XMLSerializer::generateValidXmlFromObj(
-							Caster::cast($value, stdClass::class)
-						)??""
-					)
-					: XMLSerializer::generateValidXmlFromArray([$value])??""),
-			default                       => is_array($value) || is_object($value)
-				? json_encode($value)??""
-				: $value??""
-		};
-	}
+            public function handleClient(Gateway $gateway, Client $client, Request $request, Response $response): Promise {
+                return call(function() use ($gateway, $client): Generator {
+                    try {
+                        while ($message = yield $client->receive()) {
+                            yield \Amp\call(fn() => $this->wsi->onMessage($message, $gateway, $client));
+                        }
 
-	private function websocket(WebSocketInterface $wsi): Websocket {
-		$websocket = new Websocket(new class($wsi) implements ClientHandler {
-			public function __construct(private WebSocketInterface $wsi) {
-			}
+                        try {
+                            $client->onClose(fn(...$args) => yield \Amp\call(fn() => $this->wsi->onClose(...$args)));
+                        } catch (Throwable $e) {
+                            yield \Amp\call(fn() => $this->wsi->onError($e));
+                            $client->close(Code::ABNORMAL_CLOSE);
+                        }
+                    } catch (Throwable $e) {
+                        yield \Amp\call(fn() => $this->wsi->onError($e));
+                        $client->close(Code::ABNORMAL_CLOSE);
+                    }
+                });
+            }
+        });
 
-			public function handleHandshake(Gateway $gateway, Request $request, Response $response): Promise {
-				return call(function() use ($gateway, $request, $response) {
-					try {
-						yield \Amp\call(fn() => $this->wsi->onStart($gateway));
-					} catch(Throwable $e) {
-						yield \Amp\call(fn() => $this->wsi->onError($e));
-					}
-					return new Success($response);
-				});
-			}
+        $websocket->onStart(WebServer::getHttpServer());
+        $websocket->onStop(WebServer::getHttpServer());
 
-			public function handleClient(Gateway $gateway, Client $client, Request $request, Response $response): Promise {
-				return call(function() use ($gateway, $client): Generator {
-					try {
-						while($message = yield $client->receive()) {
-							yield \Amp\call(fn() => $this->wsi->onMessage($message, $gateway, $client));
-						}
+        return $websocket;
+    }
 
-						try {
-							$client->onClose(fn(...$args) => yield \Amp\call(fn() => $this->wsi->onClose(...$args)));
-						} catch(Throwable $e) {
-							yield \Amp\call(fn() => $this->wsi->onError($e));
-							$client->close(Code::ABNORMAL_CLOSE);
-						}
-					} catch(Throwable $e) {
-						yield \Amp\call(fn() => $this->wsi->onError($e));
-						$client->close(Code::ABNORMAL_CLOSE);
-					}
-				});
-			}
-		});
-
-		$websocket->onStart(WebServer::getHttpServer());
-		$websocket->onStop(WebServer::getHttpServer());
-
-		return $websocket;
-	}
-
-	private function filterConsumedContentType(
-		Consumes $consumes,
-	): array {
-		$consumed = $consumes->getContentType();
-		return array_filter($consumed, fn($type) => !empty($type));
-	}
+    private function filterConsumedContentType(Consumes $consumes): array {
+        $consumed = $consumes->getContentType();
+        return array_filter($consumed, fn($type) => !empty($type));
+    }
 }

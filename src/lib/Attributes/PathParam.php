@@ -34,30 +34,30 @@ class PathParam implements AttributeInterface {
 
     private static array $cache = [];
 
-    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
+    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $context): Promise {
         /** @var false|HttpContext $http */
         return new LazyPromise(function() use (
             $reflection,
             &$value,
-            $http
+            $context
         ) {
             $name = $reflection->getName();
-            if (!isset(self::$cache["$http->eventID:$name"])) {
+            if (!isset(self::$cache[$context->eventID])) {
                 $type = $reflection->getType();
                 if ($type instanceof ReflectionUnionType) {
                     $typeName = $type->getTypes()[0]->getName();
                 } elseif ($type instanceof ReflectionType) {
                     $typeName = $type->getName();
                 } else {
-                    die(Strings::red("Handler \"$http->eventID\" must specify at least 1 type path parameter \"$name\".\n"));
+                    die(Strings::red("Handler \"$context->eventID\" must specify at least 1 type path parameter \"$name\".\n"));
                 }
 
-                self::$cache[$http->eventID] = $typeName;
+                self::$cache[$context->eventID] = $typeName;
             }
 
-            $cname = self::$cache[$http->eventID];
+            $cname = self::$cache[$context->eventID];
 
-            $value = $http->params[$name] ?? false;
+            $value = $context->params[$name] ?? false;
 
             if ('y' === $value) {
                 $value = true;
