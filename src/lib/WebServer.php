@@ -241,23 +241,23 @@ class WebServer {
      */
     private static function serve(
         HttpConfiguration $config,
-        Request $httpRequest,
+        Request $request,
         HttpInvoker $invoker
     ): Generator {
         $logger = yield Container::create(LoggerInterface::class);
-        $httpRequestMethod = $httpRequest->getMethod();
-        $httpRequestUri = $httpRequest->getUri();
-        $httpRequestPath = $httpRequestUri->getPath();
+        $requestMethod = $request->getMethod();
+        $requestUri = $request->getUri();
+        $requestPath = $requestUri->getPath();
 
         //check if request matches any exposed endpoint and extract parameters
-        [$httpRequestPath, $httpRequestPathParameters] = yield from static::usingPath($httpRequestMethod, $httpRequestPath, Route::getAllRoutes());
+        [$requestPath, $requestPathParameters] = yield from static::usingPath($requestMethod, $requestPath, Route::getAllRoutes());
 
-        if (!$httpRequestPath) {
+        if (!$requestPath) {
             $response = yield from $invoker->invoke(
-                httpRequest              : $httpRequest,
-                httpRequestMethod        : $httpRequestMethod,
-                httpRequestPath          : '@404',
-                httpRequestPathParameters: $httpRequestPathParameters,
+                request              : $request,
+                requestMethod        : $requestMethod,
+                requestPath          : '@404',
+                requestPathParameters: $requestPathParameters,
             );
 
             if (!$response) {
@@ -269,14 +269,14 @@ class WebServer {
 
         try {
             $response = yield from $invoker->invoke(
-                httpRequest              : $httpRequest,
-                httpRequestMethod        : $httpRequestMethod,
-                httpRequestPath          : $httpRequestPath,
-                httpRequestPathParameters: $httpRequestPathParameters,
+                request              : $request,
+                requestMethod        : $requestMethod,
+                requestPath          : $requestPath,
+                requestPathParameters: $requestPathParameters,
             );
 
             if (!$response) {
-                $logger->critical("The path matcher returned a match for \"$httpRequestMethod\" but the invoker couldn't find the function/method to invoke, serving an empty \"500 Internal Server Error\" response instead.");
+                $logger->critical("The path matcher returned a match for \"$requestMethod\" but the invoker couldn't find the function/method to invoke, serving an empty \"500 Internal Server Error\" response instead.");
                 $response = new Response(Status::INTERNAL_SERVER_ERROR);
             }
             return $response;
@@ -291,28 +291,28 @@ class WebServer {
 
     private static array $cache = [];
 
-    private static function usingPath(string $httpRequestMethod, string $httpRequestPath, array $callbacks): Generator {
-        if (!isset($callbacks[$httpRequestMethod])) {
+    private static function usingPath(string $requestMethod, string $requestPath, array $callbacks): Generator {
+        if (!isset($callbacks[$requestMethod])) {
             return [false, []];
         }
-        foreach ($callbacks[$httpRequestMethod] as $localPath => $callback) {
-            if (!isset(self::$cache[$httpRequestMethod])) {
-                self::$cache[$httpRequestMethod] = [];
+        foreach ($callbacks[$requestMethod] as $localPath => $callback) {
+            if (!isset(self::$cache[$requestMethod])) {
+                self::$cache[$requestMethod] = [];
             }
-            if (isset(self::$cache[$httpRequestMethod][$localPath])) {
-                $patterns = self::$cache[$httpRequestMethod][$localPath];
+            if (isset(self::$cache[$requestMethod][$localPath])) {
+                $patterns = self::$cache[$requestMethod][$localPath];
             } else {
                 $patterns = [];
-                foreach (Route::findPattern($httpRequestMethod, $localPath) as $g) {
+                foreach (Route::findPattern($requestMethod, $localPath) as $g) {
                     $patterns[] = yield from $g;
                 }
-                self::$cache[$httpRequestMethod][$localPath] = $patterns;
+                self::$cache[$requestMethod][$localPath] = $patterns;
             }
             $ok = false;
             $allParams = [];
             /** @var callable $pattern */
             foreach ($patterns as $pattern) {
-                [$k, $params] = $pattern($httpRequestPath);
+                [$k, $params] = $pattern($requestPath);
                 if ($k) {
                     $ok = true;
                     foreach ($params as $key => $value) {

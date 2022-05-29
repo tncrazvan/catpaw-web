@@ -4,15 +4,12 @@ namespace CatPaw\Web\Attributes;
 
 use function Amp\call;
 use Amp\Promise;
-use Amp\Socket\Certificate;
 use Attribute;
 use CatPaw\Attributes\Entry;
 use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Attributes\Traits\CoreAttributeDefinition;
-use CatPaw\Web\HttpConfiguration;
 use CatPaw\Web\WebServer;
 
-use Psr\Log\LoggerInterface;
 
 #[Attribute]
 class StartWebServer implements AttributeInterface {

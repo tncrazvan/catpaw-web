@@ -69,19 +69,19 @@ class HttpInvoker {
      * @return Generator
      */
     public function invoke(
-        Request $httpRequest,
-        string $httpRequestMethod,
-        string $httpRequestPath,
-        array $httpRequestPathParameters,
+        Request $request,
+        string $requestMethod,
+        string $requestPath,
+        array $requestPathParameters,
     ): Generator {
         /** @var HttpConfiguration $config */
-        $httpConfiguration = yield Container::create(HttpConfiguration::class);
-        $httpRequestContentType = $httpRequest->getHeader("Content-Type") ?? '*/*';
-        $callbacks = Route::findRoute($httpRequestMethod, $httpRequestPath);
+        $configuration = yield Container::create(HttpConfiguration::class);
+        $requestContentType = $request->getHeader("Content-Type") ?? '*/*';
+        $callbacks = Route::findRoute($requestMethod, $requestPath);
         $len = count($callbacks);
 
 
-        $queryChunks = explode('&', preg_replace('/^\?/', '', $httpRequest->getUri()->getQuery(), 1));
+        $queryChunks = explode('&', preg_replace('/^\?/', '', $request->getUri()->getQuery(), 1));
         $query = [];
 
         foreach ($queryChunks as $chunk) {
@@ -95,7 +95,7 @@ class HttpInvoker {
         }
 
         /** @var HttpContext $http */
-        $context = new class(sessionOperations: $this->sessionOperations, eventID: "$httpRequestMethod:$httpRequestPath", query: $query, params: $httpRequestPathParameters, request: $httpRequest, response: new Response(), prepared: false) extends HttpContext {
+        $context = new class(sessionOperations: $this->sessionOperations, eventID: "$requestMethod:$requestPath", query: $query, params: $requestPathParameters, request: $request, response: new Response(), prepared: false) extends HttpContext {
             public function __construct(
                 public SessionOperationsInterface $sessionOperations,
                 public string $eventID,
@@ -108,31 +108,55 @@ class HttpInvoker {
             ) {
             }
         };
-
+        
+        
 
         for ($i = 0; $i < $len; $i++) {
+            if (!isset($this->cache[$requestMethod][$requestPath][$i])) {
+                $reflection = new ReflectionFunction($callbacks[$i]);
+                $consumes = yield Consumes::findByFunction($reflection);
+                $produces = yield Produces::findByFunction($reflection);
+                
+                $this->cache[$requestMethod][$requestPath][$i] = new SplFixedArray(3);
+    
+                $this->cache[$requestMethod][$requestPath][$i][self::REFLECTION] = $reflection;
+                $this->cache[$requestMethod][$requestPath][$i][self::CONSUMES] = $consumes;
+                $this->cache[$requestMethod][$requestPath][$i][self::PRODUCES] = $produces;
+            }
+           
+
             $continue = yield from $this->next(
-                configuration: $httpConfiguration,
+                configuration: $configuration,
                 context: $context,
-                requestMethod: $httpRequestMethod,
-                requestPath: $httpRequestPath,
-                requestContentType: $httpRequestContentType,
+                requestMethod: $requestMethod,
+                requestPath: $requestPath,
+                requestContentType: $requestContentType,
                 index: $i,
                 callback: $callbacks[$i],
             );
 
             if (!$continue && $len > $i + 1) {
-                //a filter just interrupted the response.
-                $this->contextualize($context);
+                //a filter just interrupted the response.                   
+                $this->contextualize(
+                    context: $context,
+                    produces: $this->cache[$requestMethod][$requestPath][$i][self::PRODUCES] ?? false
+                );
                 return $context->response;
             }
         }
-
-        $this->contextualize($context);
+        $this->contextualize(
+            context: $context,
+            produces: $this->cache[$requestMethod][$requestPath][$i - 1][self::PRODUCES] ?? false
+        );
         return $context->response;
     }
 
-    private function contextualize(HttpContext $context) {
+    private function contextualize(HttpContext $context, false|Produces $produces) {
+        if ( $produces && !$context->response->hasHeader("Content-Type") ) {
+            $context->response->setHeader("Content-Type", $produces->getContentType());
+        }
+
+
         $acceptables = explode(",", $context->request->getHeader("Accept") ?? "text/plain");
         $produced = [$context->response->getHeader("content-type") ?? "text/plain"];
 
@@ -207,24 +231,11 @@ class HttpInvoker {
         int $index,
         Closure $callback,
     ): Generator {
-        if (!isset($this->cache[$requestMethod][$requestPath])) {
-            $reflection = new ReflectionFunction($callback);
-            $consumes = yield Consumes::findByFunction($reflection);
-            $produces = yield Produces::findByFunction($reflection);
-
-            $this->cache[$requestMethod][$requestPath] = new SplFixedArray(3);
-
-            $this->cache[$requestMethod][$requestPath][self::REFLECTION] = $reflection;
-            $this->cache[$requestMethod][$requestPath][self::CONSUMES] = $consumes;
-            $this->cache[$requestMethod][$requestPath][self::PRODUCES] = $produces;
-        }
 
         /** @var ReflectionFunction $reflection */
-        $reflection = $this->cache[$requestMethod][$requestPath][self::REFLECTION];
+        $reflection = $this->cache[$requestMethod][$requestPath][$index][self::REFLECTION];
         /** @var Consumes $consumes */
-        $consumes = $this->cache[$requestMethod][$requestPath][self::CONSUMES];
-        /** @var Produces $produces */
-        $produces = $this->cache[$requestMethod][$requestPath][self::PRODUCES];
+        $consumes = $this->cache[$requestMethod][$requestPath][$index][self::CONSUMES];
 
 
         /** @var false|Consumes $produces */
