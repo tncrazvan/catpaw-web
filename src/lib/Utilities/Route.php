@@ -8,7 +8,7 @@ use Amp\Promise;
 use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Utilities\AsciiTable;
 use CatPaw\Utilities\Strings;
-use CatPaw\Web\Attributes\PathParam;
+use CatPaw\Web\Attributes\Param;
 use CatPaw\Web\RouteHandlerContext;
 use Closure;
 
@@ -56,6 +56,8 @@ class Route {
         return $table->toString().PHP_EOL;
     }
 
+	private static $pathPatternsCache = [];
+
     /**
      * @param  string    $path
      * @param  array     $params
@@ -65,14 +67,17 @@ class Route {
         string $path,
         array $params
     ): Generator {
+		if(isset(self::$pathPatternsCache[$path]))
+			return self::$pathPatternsCache[$path];
+
         $targets = [
             'pathParams' => [],
             'names' => [],
             'rawNames' => [],
         ];
         foreach ($params as $param) {
-            /** @var PathParam $pathParam */
-            $pathParam = yield PathParam::findByParameter($param);
+            /** @var Param $pathParam */
+            $pathParam = yield Param::findByParameter($param);
             if ($pathParam) {
                 $optional = $param->isOptional();
                 $typeName = 'string';
@@ -134,7 +139,7 @@ class Route {
 
         $piecesLen = count($localPieces);
 
-        return function(string $requestedPath) use ($targets, $localPieces, $piecesLen, $path) {
+        $resolver = function(string $requestedPath) use ($targets, $localPieces, $piecesLen, $path) {
             $variables = [];
             $offset = 0;
             $reconstructed = '';
@@ -146,7 +151,7 @@ class Route {
                     $offset += strlen($subrp);
                     $reconstructed .= $subrp;
                     if (isset($pathParams[$i])) {
-                        /** @var PathParam $param */
+                        /** @var Param $param */
                         $param = $pathParams[$i];
                         $next = $localPieces[$i + 1] ?? false;
                         if (false !== $next) {
@@ -169,6 +174,10 @@ class Route {
             $ok = $reconstructed === $requestedPath;
             return [$ok, $variables];
         };
+
+		self::$pathPatternsCache[$path] = $resolver;
+
+		return $resolver;
     }
 
     /**
