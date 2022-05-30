@@ -59,15 +59,15 @@ class HttpInvoker {
         }
     }
 
-    /**
-     * @param  Request             $httpRequest
-     * @param  string              $httpRequestPath
-     * @param  string              $httpRequestMethod
-     * @param  array               $httpRequestPathParameters
-     * @throws Throwable
-     * @throws ReflectionException
-     * @return Generator
-     */
+	/**
+	 * @param Request $request
+	 * @param string  $requestMethod
+	 * @param string  $requestPath
+	 * @param array   $requestPathParameters
+	 * @return Generator
+	 * @throws ReflectionException
+	 * @throws Throwable
+	 */
     public function invoke(
         Request $request,
         string $requestMethod,
@@ -86,10 +86,10 @@ class HttpInvoker {
 
         foreach ($queryChunks as $chunk) {
             $split = explode('=', $chunk);
-            $len = count($split);
-            if (2 === $len) {
+            $l = count($split);
+            if (2 === $l) {
                 $query[urldecode($split[0])] = urldecode($split[1]);
-            } elseif (1 === $len && '' !== $split[0]) {
+            } elseif (1 === $l && '' !== $split[0]) {
                 $query[urldecode($split[0])] = true;
             }
         }
@@ -151,7 +151,7 @@ class HttpInvoker {
         return $context->response;
     }
 
-    private function contextualize(HttpContext $context, false|Produces $produces) {
+    private function contextualize(HttpContext $context, false|Produces $produces): void {
         if ( $produces && !$context->response->hasHeader("Content-Type") ) {
             $context->response->setHeader("Content-Type", $produces->getContentType());
         }
@@ -174,11 +174,11 @@ class HttpInvoker {
         }
     }
 
-    /**
-     * @param  string $contentType
-     * @param  mixed  $value
-     * @return string
-     */
+	/**
+	 * @param HttpContext $context
+	 * @param string      $contentType
+	 * @return void
+	 */
     private function transform(
         HttpContext $context,
         string $contentType,
@@ -210,18 +210,17 @@ class HttpInvoker {
     private const CONSUMES = 1;
     private const PRODUCES = 2;
 
-    /**
-     * @param  HttpConfiguration   $configuration
-     * @param  HttpContext         $context
-     * @param  string              $requestMethod
-     * @param  string              $requestPath
-     * @param  string              $requestContentType
-     * @param  Closure             $callback
-     * @param  bool                $isMiddleware
-     * @throws ReflectionException
-     * @throws Throwable
-     * @return Generator
-     */
+	/**
+	 * @param HttpConfiguration $configuration
+	 * @param HttpContext       $context
+	 * @param string            $requestMethod
+	 * @param string            $requestPath
+	 * @param string            $requestContentType
+	 * @param int               $index
+	 * @param Closure           $callback
+	 * @return Generator
+	 * @throws Exception
+	 */
     private function next(
         HttpConfiguration $configuration,
         HttpContext $context,
@@ -283,7 +282,7 @@ class HttpInvoker {
         }
         
         /** @var WebSocketInterface|Response|string|int|float|bool */
-        $response = yield \Amp\call($callback, ...$dependencies);
+        $response = yield call($callback, ...$dependencies);
 
         if (($sessionIDCookie = $context->response->getCookie("session-id") ?? false)) {
             yield $this->sessionOperations->persistSession($sessionIDCookie->getValue());
@@ -302,8 +301,7 @@ class HttpInvoker {
                 // $context->response->setBody($response);
                 $context->prepared = $response;
             } else {
-                /** @var Response $response */
-                foreach ($response->getHeaders() as $key => $value) {
+				foreach ($response->getHeaders() as $key => $value) {
                     $context->response->setHeader($key, $value);
                 }
                 
@@ -323,9 +321,9 @@ class HttpInvoker {
             public function handleHandshake(Gateway $gateway, Request $request, Response $response): Promise {
                 return call(function() use ($gateway, $request, $response) {
                     try {
-                        yield \Amp\call(fn() => $this->wsi->onStart($gateway));
+                        yield call(fn() => $this->wsi->onStart($gateway));
                     } catch (Throwable $e) {
-                        yield \Amp\call(fn() => $this->wsi->onError($e));
+                        yield call(fn() => $this->wsi->onError($e));
                     }
                     return new Success($response);
                 });
@@ -335,17 +333,17 @@ class HttpInvoker {
                 return call(function() use ($gateway, $client): Generator {
                     try {
                         while ($message = yield $client->receive()) {
-                            yield \Amp\call(fn() => $this->wsi->onMessage($message, $gateway, $client));
+                            yield call(fn() => $this->wsi->onMessage($message, $gateway, $client));
                         }
 
                         try {
-                            $client->onClose(fn(...$args) => yield \Amp\call(fn() => $this->wsi->onClose(...$args)));
+                            $client->onClose(fn(...$args) => yield call(fn() => $this->wsi->onClose(...$args)));
                         } catch (Throwable $e) {
-                            yield \Amp\call(fn() => $this->wsi->onError($e));
+                            yield call(fn() => $this->wsi->onError($e));
                             $client->close(Code::ABNORMAL_CLOSE);
                         }
                     } catch (Throwable $e) {
-                        yield \Amp\call(fn() => $this->wsi->onError($e));
+                        yield call(fn() => $this->wsi->onError($e));
                         $client->close(Code::ABNORMAL_CLOSE);
                     }
                 });
