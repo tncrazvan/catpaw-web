@@ -347,29 +347,29 @@ class HttpInvoker {
                 public function handleHandshake(Gateway $gateway, Request $request, Response $response): Promise {
                     return call(function() use ($gateway, $request, $response) {
                         try {
-                            yield $this->wsi->onStart($gateway);
+                            yield call($this->wsi->onStart(...), $gateway);
                         } catch (Throwable $e) {
-                            yield $this->wsi->onError($e);
+                            yield call($this->wsi->onError(...), $e);
                         }
                         return new Success($response);
                     });
                 }
     
                 public function handleClient(Gateway $gateway, Client $client, Request $request, Response $response): Promise {
-                    $client->onClose(fn(Client $client, int $code, string $reason) => $this->wsi->onClose($client, $code, $reason));
+                    $client->onClose(fn(Client $client, int $code, string $reason) => yield $this->wsi->onClose($client, $code, $reason));
                     return call(function() use ($gateway, $client) {
                         try {
                             while ($message = yield $client->receive()) {
-                                yield $this->wsi->onMessage($message, $gateway, $client);
+                                yield call($this->wsi->onMessage(...), $message, $gateway, $client);
                             }
     
                             try {
                                 $client->close(Code::ABNORMAL_CLOSE);
                             } catch (Throwable $e) {
-                                yield $this->wsi->onError($e);
+                                yield call($this->wsi->onError(...), $e);
                             }
                         } catch (Throwable $e) {
-                            yield $this->wsi->onError($e);
+                            yield call($this->wsi->onError(...), $e);
                         }
                     });
                 }
