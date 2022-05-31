@@ -8,7 +8,6 @@ use Amp\Http\Client\Response;
 use Amp\Loop;
 use Amp\PHPUnit\AsyncTestCase;
 use CatPaw\Web\Attributes\Param;
-use CatPaw\Web\Attributes\Param;
 use CatPaw\Web\Utilities\Route;
 use CatPaw\Web\WebServer;
 use Generator;
@@ -25,29 +24,29 @@ class EndpointTest extends AsyncTestCase {
         Loop::stop();
     }
 
-	public function testGetWithPathParams(): Generator {
-		$http = HttpClientBuilder::buildDefault();
-		yield WebServer::start(interfaces: "127.0.0.1:8000");
-		yield Route::get("/{name}", fn(#[Param] string $name) => "hello $name");
-		/** @var Response $response */
-		$response = yield $http->request(new Request("http://127.0.0.1:8000/user1"));
-		$this->assertEquals("hello user1", yield $response->getBody()->buffer());
-		yield WebServer::stop();
-		Loop::stop();
-	}
+    public function testGetWithPathParams(): Generator {
+        $http = HttpClientBuilder::buildDefault();
+        yield WebServer::start(interfaces: "127.0.0.1:8000");
+        yield Route::get("/{name}", fn(#[Param] string $name) => "hello $name");
+        /** @var Response $response */
+        $response = yield $http->request(new Request("http://127.0.0.1:8000/user1"));
+        $this->assertEquals("hello user1", yield $response->getBody()->buffer());
+        yield WebServer::stop();
+        Loop::stop();
+    }
 
-	public function testGetWithParams(): Generator {
-		$http = HttpClientBuilder::buildDefault();
-		yield WebServer::start(interfaces: "127.0.0.1:8000");
-		yield Route::get("/{name}", fn(#[Param] string $name) => "hello $name");
-		/** @var Response $response */
-		$response = yield $http->request(new Request("http://127.0.0.1:8000/user1"));
-		$this->assertEquals("hello user1", yield $response->getBody()->buffer());
-		$response = yield $http->request(new Request("http://127.0.0.1:8000/user2"));
-		$this->assertEquals("hello user2", yield $response->getBody()->buffer());
-		yield WebServer::stop();
-		Loop::stop();
-	}
+    public function testGetWithParams(): Generator {
+        $http = HttpClientBuilder::buildDefault();
+        yield WebServer::start(interfaces: "127.0.0.1:8000");
+        yield Route::get("/{name}", fn(#[Param] string $name) => "hello $name");
+        /** @var Response $response */
+        $response = yield $http->request(new Request("http://127.0.0.1:8000/user1"));
+        $this->assertEquals("hello user1", yield $response->getBody()->buffer());
+        $response = yield $http->request(new Request("http://127.0.0.1:8000/user2"));
+        $this->assertEquals("hello user2", yield $response->getBody()->buffer());
+        yield WebServer::stop();
+        Loop::stop();
+    }
 
     public function testFilters(): Generator {
         $http = HttpClientBuilder::buildDefault();
