@@ -14,6 +14,7 @@ use Generator;
 
 class EndpointTest extends AsyncTestCase {
     public function testGet(): Generator {
+        Route::clearAll();
         $http = HttpClientBuilder::buildDefault();
         yield WebServer::start(interfaces: "127.0.0.1:8000");
         Route::get("/", fn() => "hello world");
@@ -25,6 +26,7 @@ class EndpointTest extends AsyncTestCase {
     }
 
     public function testGetWithPathParams(): Generator {
+        Route::clearAll();
         $http = HttpClientBuilder::buildDefault();
         yield WebServer::start(interfaces: "127.0.0.1:8000");
         yield Route::get("/{name}", fn(#[Param] string $name) => "hello $name");
@@ -36,6 +38,7 @@ class EndpointTest extends AsyncTestCase {
     }
 
     public function testGetWithParams(): Generator {
+        Route::clearAll();
         $http = HttpClientBuilder::buildDefault();
         yield WebServer::start(interfaces: "127.0.0.1:8000");
         yield Route::get("/{name}", fn(#[Param] string $name) => "hello $name");
@@ -49,6 +52,7 @@ class EndpointTest extends AsyncTestCase {
     }
 
     public function testFilters(): Generator {
+        Route::clearAll();
         $http = HttpClientBuilder::buildDefault();
         yield WebServer::start(interfaces: "127.0.0.1:8000");
     

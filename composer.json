@@ -25,7 +25,7 @@
     {
       "name": "Razvan Tanase",
       "email": "tangent.jotey@gmail.com",
-      "homepage": "https://github.com/tncrazvan",
+      "homepage": "https://github.com/tncrazvan/catpaw-web",
       "role": "Developer"
     }
   ],
@@ -34,7 +34,7 @@
       "CatPaw\\Web\\": "src/lib/"
     },
     "files": [
-      "src/lib/functions.php"
+      "src/lib/functions.m.php"
     ]
   },
   "require": {
