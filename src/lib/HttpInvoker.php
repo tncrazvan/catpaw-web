@@ -306,10 +306,16 @@ class HttpInvoker {
         }
 
         if ($response instanceof WebSocketInterface) {
-            /** @var Websocket $websocket */
-            $websocket = yield $this->websocket($response);
-            $context->response = yield $websocket->handleRequest($context->request);
-            $context->prepared = $context->response->getBody();
+            try {
+                /** @var Websocket $websocket */
+                $websocket = yield $this->websocket($response);
+                $context->response = yield $websocket->handleRequest($context->request);
+                $context->prepared = $context->response->getBody();
+            } catch (Throwable $e) {
+                $context->response = new Response(Status::BAD_REQUEST, [], "Bad request, this api serves websockets.");
+                $context->prepared = $context->response->getBody();
+                return false;
+            }
         } else {
             if (!$response instanceof Response) {
                 // $context->response->setBody($response);
