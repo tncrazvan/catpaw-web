@@ -9,11 +9,11 @@ use Amp\Websocket\Server\Gateway;
 use Throwable;
 
 interface WebSocketInterface {
-    public function onStart(Gateway $gateway):Promise;
+    public function onStart(Gateway $gateway);
 
-    public function onMessage(Message $message, Gateway $gateway, Client $client):Promise;
+    public function onMessage(Message $message, Gateway $gateway, Client $client);
 
-    public function onClose(Client $client, int $code, string $reason):Promise;
+    public function onClose(Client $client, int $code, string $reason);
 
-    public function onError(Throwable $e):Promise;
+    public function onError(Throwable $e);
 }
