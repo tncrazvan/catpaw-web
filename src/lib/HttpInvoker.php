@@ -356,7 +356,7 @@ class HttpInvoker {
                 }
     
                 public function handleClient(Gateway $gateway, Client $client, Request $request, Response $response): Promise {
-                    $client->onClose(fn(Client $client, int $code, string $reason) => yield $this->wsi->onClose($client, $code, $reason));
+                    $client->onClose(fn(Client $client, int $code, string $reason) => call($this->wsi->onClose(...), $client, $code, $reason));
                     return call(function() use ($gateway, $client) {
                         try {
                             while ($message = yield $client->receive()) {
