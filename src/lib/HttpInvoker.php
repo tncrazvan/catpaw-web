@@ -133,6 +133,7 @@ class HttpInvoker {
 				requestPath       : $requestPath,
 				requestContentType: $requestContentType,
 				index             : $i,
+				max               : $len - 1,
 				callback          : $callbacks[$i],
 			);
 
@@ -229,6 +230,7 @@ class HttpInvoker {
 		string            $requestPath,
 		string            $requestContentType,
 		int               $index,
+		int               $max,
 		Closure           $callback,
 	): Generator {
 
@@ -284,6 +286,15 @@ class HttpInvoker {
 
 		/** @var WebSocketInterface|Response|string|int|float|bool */
 		$response = yield call($callback, ...$dependencies);
+
+		if($index < $max && true !== $response) {
+			foreach($response->getHeaders() as $key => $value) {
+				$context->response->setHeader($key, $value);
+			}
+			$context->response->setStatus($response->getStatus());
+			$context->prepared = $response->getBody();
+			return false;
+		}
 
 		if(($sessionIDCookie = $context->response->getCookie("session-id")??false)) {
 			yield $this->sessionOperations->persistSession($sessionIDCookie->getValue());
