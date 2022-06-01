@@ -8,16 +8,18 @@ use Amp\Http\Client\Response;
 use Amp\Loop;
 use Amp\PHPUnit\AsyncTestCase;
 use CatPaw\Web\Attributes\Param;
+use CatPaw\Web\Attributes\Produces;
 use CatPaw\Web\Utilities\Route;
 use CatPaw\Web\WebServer;
 use Generator;
 
 class EndpointTest extends AsyncTestCase {
     public function testGet(): Generator {
+        yield WebServer::stop();
         Route::clearAll();
         $http = HttpClientBuilder::buildDefault();
         yield WebServer::start(interfaces: "127.0.0.1:8000");
-        Route::get("/", fn() => "hello world");
+        yield Route::get("/", fn() => "hello world");
         /** @var Response $response */
         $response = yield $http->request(new Request("http://127.0.0.1:8000/"));
         $this->assertEquals("hello world", yield $response->getBody()->buffer());
@@ -26,6 +28,7 @@ class EndpointTest extends AsyncTestCase {
     }
 
     public function testGetWithPathParams(): Generator {
+        yield WebServer::stop();
         Route::clearAll();
         $http = HttpClientBuilder::buildDefault();
         yield WebServer::start(interfaces: "127.0.0.1:8000");
@@ -38,6 +41,7 @@ class EndpointTest extends AsyncTestCase {
     }
 
     public function testGetWithParams(): Generator {
+        yield WebServer::stop();
         Route::clearAll();
         $http = HttpClientBuilder::buildDefault();
         yield WebServer::start(interfaces: "127.0.0.1:8000");
@@ -52,15 +56,16 @@ class EndpointTest extends AsyncTestCase {
     }
 
     public function testFilters(): Generator {
+        yield WebServer::stop();
         Route::clearAll();
         $http = HttpClientBuilder::buildDefault();
         yield WebServer::start(interfaces: "127.0.0.1:8000");
     
         $a = function(\Amp\Http\Server\Response $response) {
-            $response->setHeader("content-type", "text/html");
+            $response->setHeader("Content-Type", "text/html");
             return true;
         };
-        $b = function(\Amp\Http\Server\Response $response2) {
+        $b = function() {
             return "ok";
         };
     
@@ -68,7 +73,7 @@ class EndpointTest extends AsyncTestCase {
         /** @var Response $response */
         $response = yield $http->request(new Request("http://127.0.0.1:8000/"));
     
-        $this->assertEquals("text/html", $response->getHeader("content-type"));
+        $this->assertEquals("text/html", $response->getHeader("Content-Type"));
         yield WebServer::stop();
         Loop::stop();
     }

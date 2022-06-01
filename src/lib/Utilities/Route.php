@@ -8,7 +8,9 @@ use Amp\Promise;
 use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Utilities\AsciiTable;
 use CatPaw\Utilities\Strings;
+use CatPaw\Web\Attributes\Consumes;
 use CatPaw\Web\Attributes\Param;
+use CatPaw\Web\Attributes\Produces;
 use CatPaw\Web\RouteHandlerContext;
 use Closure;
 
@@ -21,28 +23,168 @@ use ReflectionType;
 use ReflectionUnionType;
 
 class Route {
-    private static array $routes = [];
-    private static array $patterns = [];
+    private static array $routes      = [];
+    private static array $reflections = [];
+    private static array $consumes    = [];
+    private static array $produces    = [];
+    private static array $patterns    = [];
 
-    public static function findRoute(string $method, string $path): array {
-        return self::$routes[$method][$path];
+    /**
+     * Find a route.
+     * @param  string      $method
+     * @param  string      $path
+     * @return false|array
+     */
+    public static function findRoute(
+        string $method,
+        string $path,
+    ): false|array {
+        return self::$routes[$method][$path] ?? false;
     }
 
+    /**
+     * Find the ReflectionFunction of a given route.
+     * @param  string                   $method
+     * @param  string                   $path
+     * @param  int                      $index  the index of the filter or 0 if the route has no filters.
+     * @return false|ReflectionFunction
+     */
+    public static function findReflection(
+        string $method,
+        string $path,
+        int $index,
+    ): false|ReflectionFunction {
+        return self::$reflections[$method][$path][$index];
+    }
+
+    /**
+     * Find the produced content-type of a route.
+     * @param  string         $method
+     * @param  string         $path
+     * @param  int            $index  the index of the filter or 0 if the route has no filters.
+     * @return false|Produces
+     */
+    public static function findProduces(
+        string $method,
+        string $path,
+        int $index,
+    ): false|Produces {
+        return self::$produces[$method][$path][$index] ?? false;
+    }
+
+    /**
+     * Find the consumed content-type of a route.
+     * @param  string         $method
+     * @param  string         $path
+     * @param  int            $index  the index of the filter or 0 if the route has no filters.
+     * @return false|Consumes
+     */
+    public static function findConsumes(
+        string $method,
+        string $path,
+        int $index,
+    ): false|Consumes {
+        return self::$consumes[$method][$path][$index] ?? false;
+    }
+
+    /**
+     * Find a list of consumed produced-types for each filter of a route.
+     * @param  string $method
+     * @param  string $path
+     * @return array
+     */
+    public static function findIndexedProduces(
+        string $method,
+        string $path,
+    ): array {
+        return self::$produces[$method][$path] ?? false;
+    }
+
+    /**
+     * Find a list of consumed content-types for each filter of a route.
+     * @param  string $method
+     * @param  string $path
+     * @return array
+     */
+    public static function findIndexedConsumes(
+        string $method,
+        string $path,
+    ): array {
+        return self::$consumes[$method][$path] ?? false;
+    }
+
+    /**
+     * Find the produced content-type of a route.
+     * @param  string         $method
+     * @param  string         $path
+     * @param  int            $index    the index of the filter or 0 if the route has no filters.
+     * @param  false|Produces $produces
+     * @return void
+     */
+    public static function setProduces(
+        string $method,
+        string $path,
+        int $index,
+        false|Produces $produces
+    ): void {
+        self::$produces[$method][$path][$index] = $produces;
+    }
+
+    /**
+     * Set the consumed content-type of a route.
+     * @param  string         $method
+     * @param  string         $path
+     * @param  int            $index    the index of the filter or 0 if the route has no filters.
+     * @param  false|Consumes $consumes
+     * @return void
+     */
+    public static function setConsumes(
+        string $method,
+        string $path,
+        int $index,
+        false|Consumes $consumes
+    ): void {
+        self::$consumes[$method][$path][$index] = $consumes;
+    }
+
+    /**
+     * Get all routes.
+     * @return array
+     */
     public static function getAllRoutes(): array {
         return self::$routes;
     }
 
+    /**
+     * Find path pattern.<br/>
+     * 
+     * @param  string $method
+     * @param  string $path
+     * @return array  a list of functions that can be dynamically invoked.
+     *                       Each function has the following signature <b>function(string $requestedPath):[$ok,$variables]</b>.<br/>
+     *                       If the given combination of <b>$method</b> and <b>$path</b> has not been registered beforehand using <b>Route::{httpMethod}</b> (or using a controller), this method will return an empty array.
+     */
     public static function findPattern(string $method, string $path): array {
-        return self::$patterns[$method][$path];
+        return self::$patterns[$method][$path] ?? [];
     }
 
-
+    /**
+     * Cleares all routes and other metadata 
+     * including patterns and consumed/produced content-types.
+     * @return void
+     */
     public static function clearAll(): void {
-        self::$routes = [];
+        self::$routes   = [];
         self::$patterns = [];
+        self::$consumes = [];
+        self::$produces = [];
     }
 
 
+    /**
+     * Returns an ASCI table describing all existing routes.
+     * @return string
+     */
     public static function describe(): string {
         $table = new AsciiTable();
         $table->add("Method", "Path");
@@ -56,7 +198,7 @@ class Route {
         return $table->toString().PHP_EOL;
     }
 
-	private static $pathPatternsCache = [];
+    private static $pathPatternsCache = [];
 
     /**
      * @param  string    $path
@@ -67,13 +209,14 @@ class Route {
         string $path,
         array $params
     ): Generator {
-		if(isset(self::$pathPatternsCache[$path]))
-			return self::$pathPatternsCache[$path];
+        if (isset(self::$pathPatternsCache[$path])) {
+            return self::$pathPatternsCache[$path];
+        }
 
         $targets = [
             'pathParams' => [],
-            'names' => [],
-            'rawNames' => [],
+            'names'      => [],
+            'rawNames'   => [],
         ];
         foreach ($params as $param) {
             /** @var Param $pathParam */
@@ -106,29 +249,29 @@ class Route {
                     }
                 }
                 $targets['pathParams'][] = $pathParam;
-                $targets['names'][] = '\{'.$param->getName().'\}';
-                $targets['rawNames'][] = $param->getName();
+                $targets['names'][]      = '\{'.$param->getName().'\}';
+                $targets['rawNames'][]   = $param->getName();
             }
         }
 
         if (count($targets['names']) > 0) {
             $localPieces = preg_split('/('.join("|", $targets['names']).')/', $path);
-            $pattern = '/(?<={)('.join('|', $targets['rawNames']).')(?=})/';
-            $matches = [];
+            $pattern     = '/(?<={)('.join('|', $targets['rawNames']).')(?=})/';
+            $matches     = [];
             preg_match_all($pattern, $path, $matches);
-            [$names] = $matches;
+            [$names]        = $matches;
             $orderedTargets = [
                 'pathParams' => [],
-                'names' => [],
-                'rawNames' => [],
+                'names'      => [],
+                'rawNames'   => [],
             ];
             $len = count($targets['rawNames']);
             foreach ($names as $name) {
                 for ($i = 0; $i < $len; $i++) {
                     if ($targets['rawNames'][$i] === $name) {
                         $orderedTargets['pathParams'][] = $targets['pathParams'][$i];
-                        $orderedTargets['names'][] = $targets['names'][$i];
-                        $orderedTargets['rawNames'][] = $targets['rawNames'][$i];
+                        $orderedTargets['names'][]      = $targets['names'][$i];
+                        $orderedTargets['rawNames'][]   = $targets['rawNames'][$i];
                     }
                 }
             }
@@ -139,21 +282,21 @@ class Route {
 
         $piecesLen = count($localPieces);
 
-        $resolver = function(string $requestedPath) use ($targets, $localPieces, $piecesLen, $path) {
-            $variables = [];
-            $offset = 0;
+        $resolver = function(string $requestedPath) use ($targets, $localPieces, $piecesLen) {
+            $variables     = [];
+            $offset        = 0;
             $reconstructed = '';
-            $pathParams = $targets['pathParams'];
+            $pathParams    = $targets['pathParams'];
             for ($i = 0; $i < $piecesLen; $i++) {
                 $piece = $localPieces[$i];
-                $plen = strlen($piece);
+                $plen  = strlen($piece);
                 if ($piece === ($subrp = substr($requestedPath, $offset, $plen))) {
                     $offset += strlen($subrp);
                     $reconstructed .= $subrp;
                     if (isset($pathParams[$i])) {
                         /** @var Param $param */
                         $param = $pathParams[$i];
-                        $next = $localPieces[$i + 1] ?? false;
+                        $next  = $localPieces[$i + 1] ?? false;
                         if (false !== $next) {
                             $end = '' === $next ? strlen($requestedPath) : strpos($requestedPath, $next, $offset);
 
@@ -175,9 +318,9 @@ class Route {
             return [$ok, $variables];
         };
 
-		self::$pathPatternsCache[$path] = $resolver;
+        self::$pathPatternsCache[$path] = $resolver;
 
-		return $resolver;
+        return $resolver;
     }
 
     /**
@@ -213,10 +356,16 @@ class Route {
             try {
                 $len = count($callbacks);
                 foreach ($callbacks as $i => $callback) {
-                    $isFilter = $len > 1 && $i < $len - 1;
+                    $isFilter   = $len > 1 && $i < $len - 1;
                     $reflection = new ReflectionFunction($callback);
-                    self::$patterns[$method][$path][] = self::findPathPatterns($path, $reflection->getParameters());
-                    self::$routes[$method][$path][] = $callback;
+                    
+                    self::$reflections[$method][$path][$i] = $reflection;
+
+                    self::$consumes[$method][$path][$i] = yield Consumes::findByFunction($reflection);
+                    self::$produces[$method][$path][$i] = yield Produces::findByFunction($reflection);
+
+                    self::$patterns[$method][$path][] = yield from self::findPathPatterns($path, $reflection->getParameters());
+                    self::$routes[$method][$path][]   = $callback;
                     //TODO refactor this attributes section
                     $context = new class(method: $method, path: $path, isFilter: $isFilter, ) extends RouteHandlerContext {
                         public function __construct(
@@ -249,16 +398,16 @@ class Route {
      */
     public static function getMappedParameters(ReflectionMethod $reflection_method): array {
         $reflectionParameters = $reflection_method->getParameters();
-        $namedAndTypedParams = [];
-        $namedParams = [];
+        $namedAndTypedParams  = [];
+        $namedParams          = [];
         foreach ($reflectionParameters as $reflectionParameter) {
-            $name = $reflectionParameter->getName();
-            $type = $reflectionParameter->getType()->getName();
+            $name                  = $reflectionParameter->getName();
+            $type                  = $reflectionParameter->getType()->getName();
             $namedAndTypedParams[] = "$type &\$$name";
-            $namedParams[] = "\$$name";
+            $namedParams[]         = "\$$name";
         }
         $namedAndTypedParamsString = implode(',', $namedAndTypedParams);
-        $namedParamsString = implode(',', $namedParams);
+        $namedParamsString         = implode(',', $namedParams);
         return [$namedAndTypedParamsString, $namedParamsString];
     }
 
@@ -282,7 +431,7 @@ class Route {
      *
      * @param array|Closure $callback
      *
-     * @return void
+     * @return Promise<void>
      */
     public static function notFound(array|Closure $callback): Promise {
         return call(function() use ($callback) {
@@ -301,7 +450,7 @@ class Route {
             yield static::unknown('@404', $callback);
             yield static::unlink('@404', $callback);
             yield static::unlock('@404', $callback);
-            return yield static::view('@404', $callback);
+            yield static::view('@404', $callback);
         });
     }
 

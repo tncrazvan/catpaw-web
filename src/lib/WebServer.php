@@ -119,19 +119,19 @@ class WebServer {
             $config->pemCertificates = [];
 
             foreach ($pemCertificates as $domain => $cert) {
-                $file = $cert['file'] ?? '';
-                $key = $cert['key'] ?? '';
+                $file                             = $cert['file'] ?? '';
+                $key                              = $cert['key']  ?? '';
                 $config->pemCertificates[$domain] = new Certificate($file, $key);
             }
 
-            $config->httpInterfaces = $interfaces;
+            $config->httpInterfaces       = $interfaces;
             $config->httpSecureInterfaces = $secureInterfaces;
-            $config->httpWebroot = $webroot;
-            $config->httpShowStackTrace = $showStackTrace;
-            $config->httpShowExceptions = $showExceptions;
-            $config->headers = $headers;
+            $config->httpWebroot          = $webroot;
+            $config->httpShowStackTrace   = $showStackTrace;
+            $config->httpShowExceptions   = $showExceptions;
+            $config->headers              = $headers;
 
-            self::init($config);
+            yield self::init($config);
 
             Session::setOperations(
                 new FileSystemSessionOperations(
@@ -230,8 +230,8 @@ class WebServer {
         return self::$httpServer;
     }
 
-    private static function init(HttpConfiguration $config): void {
-        Route::notFound(notfound($config));
+    private static function init(HttpConfiguration $config): Promise {
+        return Route::notFound(notfound($config));
     }
 
 
@@ -244,13 +244,13 @@ class WebServer {
         Request $request,
         HttpInvoker $invoker
     ): Generator {
-        $logger = yield Container::create(LoggerInterface::class);
+        $logger        = yield Container::create(LoggerInterface::class);
         $requestMethod = $request->getMethod();
-        $requestUri = $request->getUri();
-        $requestPath = $requestUri->getPath();
+        $requestUri    = $request->getUri();
+        $requestPath   = $requestUri->getPath();
 
         //check if request matches any exposed endpoint and extract parameters
-        [$requestPath, $requestPathParameters] = yield from static::usingPath($requestMethod, $requestPath, Route::getAllRoutes());
+        [$requestPath, $requestPathParameters] = static::usingPath($requestMethod, $requestPath, Route::getAllRoutes());
 
         if (!$requestPath) {
             $response = yield from $invoker->invoke(
@@ -282,7 +282,7 @@ class WebServer {
             return $response;
         } catch (Throwable $e) {
             $message = $config->httpShowExceptions ? $e->getMessage() : '';
-            $trace = $config->httpShowExceptions && $config->httpShowStackTrace ? "\n".$e->getTraceAsString() : '';
+            $trace   = $config->httpShowExceptions && $config->httpShowStackTrace ? "\n".$e->getTraceAsString() : '';
             $logger->error($e->getMessage());
             $logger->error($e->getTraceAsString());
             return new Response(500, [], $message.$trace);
@@ -291,7 +291,7 @@ class WebServer {
 
     private static array $cache = [];
 
-    private static function usingPath(string $requestMethod, string $requestPath, array $callbacks): Generator {
+    private static function usingPath(string $requestMethod, string $requestPath, array $callbacks) {
         if (!isset($callbacks[$requestMethod])) {
             return [false, []];
         }
@@ -304,11 +304,11 @@ class WebServer {
             } else {
                 $patterns = [];
                 foreach (Route::findPattern($requestMethod, $localPath) as $g) {
-                    $patterns[] = yield from $g;
+                    $patterns[] = $g;
                 }
                 self::$cache[$requestMethod][$localPath] = $patterns;
             }
-            $ok = false;
+            $ok        = false;
             $allParams = [];
             /** @var callable $pattern */
             foreach ($patterns as $pattern) {

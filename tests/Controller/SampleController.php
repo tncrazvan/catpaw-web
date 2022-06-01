@@ -4,11 +4,12 @@ namespace Tests\Controller;
 use CatPaw\Web\Attributes\GET;
 use CatPaw\Web\Attributes\Param;
 use CatPaw\Web\Attributes\Path;
+use CatPaw\Web\Attributes\Produces;
 
 #[Path('/')]
+#[Produces("text/html")]
 class SampleController {
-    #[GET]
-    #[Path("/")]
+    #[Produces("text/plain")]
     public function hello() {
         return "hello";
     }
