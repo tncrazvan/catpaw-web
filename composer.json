@@ -38,7 +38,7 @@
     ]
   },
   "require": {
-    "php": ">=8.0",
+    "php": ">=8.1",
     "amphp/amp": "^2.6",
     "amphp/file": "^2.0",
     "erusev/parsedown": "^1.7",
