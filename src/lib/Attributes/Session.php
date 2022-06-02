@@ -95,8 +95,8 @@ class Session implements AttributeInterface {
             }
             /** @var Session $session */
             $sessionIDCookie = $http->request->getCookie("session-id") ?? false;
-            $sessionID = $sessionIDCookie ? $sessionIDCookie->getValue() : '';
-            $session = yield $http->sessionOperations->validateSession(id: $sessionID);
+            $sessionID       = $sessionIDCookie ? $sessionIDCookie->getValue() : '';
+            $session         = yield $http->sessionOperations->validateSession(id: $sessionID);
             if (!$session) {
                 $session = yield $http->sessionOperations->startSession($sessionID);
             }

@@ -2,15 +2,12 @@
 
 namespace CatPaw\Web;
 
-use function Amp\ByteStream\buffer;
 use Amp\ByteStream\InputStream;
 use function Amp\call;
 
-use function Amp\coroutine;
 use Amp\Http\Server\Request;
 use Amp\Http\Server\Response;
 use Amp\Http\Status;
-use Amp\Loop;
 use Amp\Promise;
 use Amp\Success;
 use Amp\Websocket\Client;
@@ -77,18 +74,18 @@ class HttpInvoker {
         array $requestPathParameters,
     ): Generator {
         /** @var HttpConfiguration $config */
-        $configuration = yield Container::create(HttpConfiguration::class);
+        $configuration      = yield Container::create(HttpConfiguration::class);
         $requestContentType = $request->getHeader("Content-Type") ?? '*/*';
-        $callbacks = Route::findRoute($requestMethod, $requestPath);
-        $len = count($callbacks);
+        $callbacks          = Route::findRoute($requestMethod, $requestPath);
+        $len                = count($callbacks);
 
 
         $queryChunks = explode('&', preg_replace('/^\?/', '', $request->getUri()->getQuery(), 1));
-        $query = [];
+        $query       = [];
 
         foreach ($queryChunks as $chunk) {
             $split = explode('=', $chunk);
-            $l = count($split);
+            $l     = count($split);
             if (2 === $l) {
                 $query[urldecode($split[0])] = urldecode($split[1]);
             } elseif (1 === $l && '' !== $split[0]) {
@@ -125,8 +122,8 @@ class HttpInvoker {
             // 	$this->cache[$requestMethod][$requestPath][$i][self::PRODUCES] = $produces;
             // }
             $reflection = Route::findReflection($requestMethod, $requestPath, $i);
-            $consumes = Route::findConsumes($requestMethod, $requestPath, $i);
-            $produces = Route::findProduces($requestMethod, $requestPath, $i);
+            $consumes   = Route::findConsumes($requestMethod, $requestPath, $i);
+            $produces   = Route::findProduces($requestMethod, $requestPath, $i);
 
             $continue = yield from $this->next(
                 configuration     : $configuration,
@@ -216,10 +213,10 @@ class HttpInvoker {
         );
     }
 
-    private array $cache = [];
+    private array $cache     = [];
     private const REFLECTION = 0;
-    private const CONSUMES = 1;
-    private const PRODUCES = 2;
+    private const CONSUMES   = 1;
+    private const PRODUCES   = 2;
 
     /**
      * @param  HttpConfiguration $configuration
@@ -247,7 +244,7 @@ class HttpInvoker {
 
         /** @var false|Consumes $produces */
         if ($consumes) {
-            $consumables = $this->filterConsumedContentType($consumes);
+            $consumables  = $this->filterConsumedContentType($consumes);
             $isConsumable = false;
 
             foreach ($consumables as $consumable) {
@@ -269,9 +266,9 @@ class HttpInvoker {
 
         try {
             $dependencies = yield Container::dependencies($reflection, [
-                "id" => ["$index#".$context->request->getMethod(), $context->request->getUri()->getPath()],
+                "id"    => ["$index#".$context->request->getMethod(), $context->request->getUri()->getPath()],
                 "force" => [
-                    Request::class => $context->request,
+                    Request::class  => $context->request,
                     Response::class => $context->response,
                 ],
                 "context" => $context,
@@ -313,7 +310,7 @@ class HttpInvoker {
         if ($response instanceof WebSocketInterface) {
             try {
                 /** @var Websocket $websocket */
-                $websocket = yield $this->websocket($response);
+                $websocket         = yield $this->websocket($response);
                 $context->response = yield $websocket->handleRequest($context->request);
                 $context->prepared = $context->response->getBody();
             } catch (Throwable $e) {

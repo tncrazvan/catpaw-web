@@ -8,7 +8,6 @@ use Amp\Http\Client\Response;
 use Amp\Loop;
 use Amp\PHPUnit\AsyncTestCase;
 use CatPaw\Web\Attributes\Param;
-use CatPaw\Web\Attributes\Produces;
 use CatPaw\Web\Utilities\Route;
 use CatPaw\Web\WebServer;
 use Generator;

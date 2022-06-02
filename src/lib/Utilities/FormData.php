@@ -28,22 +28,22 @@ class FormData {
             }
 
             $entry = [
-                'attributes' => '',
+                'attributes'   => '',
                 'content_type' => '',
-                'body' => '',
+                'body'         => '',
             ];
             if (($pieces = preg_split('/\r\n\r\n/', $block, 2)) && count($pieces) > 1) {
-                $block = null;
+                $block  = null;
                 $header = preg_replace('/(?<=^)\s*/', '', $pieces[0]);
-                $body = preg_replace('/\r?\n(?=$)/', '', $pieces[1]);
+                $body   = preg_replace('/\r?\n(?=$)/', '', $pieces[1]);
                 $pieces = null;
-                $lines = preg_split('/(\r?\n)+/', $header);
+                $lines  = preg_split('/(\r?\n)+/', $header);
                 $header = null;
 
                 foreach ($lines as &$line) {
                     if (preg_match('/(?<=^Content-Disposition:).+/', $line, $attrs)) {
-                        $attrs = preg_split('/;\s+/', $attrs[0]);
-                        $attrs_len = count($attrs);
+                        $attrs      = preg_split('/;\s+/', $attrs[0]);
+                        $attrs_len  = count($attrs);
                         $attributes = [];
                         for ($i = 0;$i < $attrs_len;$i++) {
                             $attrs[$i] = preg_replace('/^\s+/', '', $attrs[$i]);
@@ -53,15 +53,15 @@ class FormData {
                         }
                         $entry['attributes'] = &$attributes;
                     } elseif (preg_match('/(?<=^Content-Type:).+/', $line, $ct)) {
-                        $content_type = preg_replace('/^\s+/', '', $ct[0]);
+                        $content_type          = preg_replace('/^\s+/', '', $ct[0]);
                         $entry['content_type'] = &$content_type;
                     }
                 }
                 if (isset($entry['attributes']['name'])) {
-                    $entry['body'] = $body;
-                    $body = null;
+                    $entry['body']                         = $body;
+                    $body                                  = null;
                     $entries[$entry['attributes']['name']] = $entry;
-                    $entry = null;
+                    $entry                                 = null;
                 }
             }
         }

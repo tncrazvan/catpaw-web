@@ -4,7 +4,6 @@ namespace CatPaw\Web;
 
 use Amp\Socket\Certificate;
 use Parsedown;
-use Psr\Log\LoggerInterface;
 
 class HttpConfiguration {
     /** @var string[]|string List of interfaces to bind to. */

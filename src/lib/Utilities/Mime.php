@@ -23,11 +23,11 @@ abstract class Mime {
      * @return string the mime type of the given resource as a String.
      */
     public static function getContentType(string $location): string {
-        $tmpType = "";
-        $tmpType0 = preg_split("/\\//", $location);
+        $tmpType        = "";
+        $tmpType0       = preg_split("/\\//", $location);
         $tmpType0Length = count($tmpType0);
         if ($tmpType0Length > 0) {
-            $tmpType1 = preg_split("/\\./", $tmpType0[$tmpType0Length - 1]);
+            $tmpType1       = preg_split("/\\./", $tmpType0[$tmpType0Length - 1]);
             $tmpType1Length = count($tmpType1);
             if ($tmpType1Length > 1) {
                 $tmpType = $tmpType1[$tmpType1Length - 1];

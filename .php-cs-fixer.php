@@ -24,11 +24,7 @@ return $config
         'heredoc_indentation'                     => true,
         'indentation_type'                        => true,
         'list_syntax'                             => true,
-        'method_argument_space'                   => [
-            'after_heredoc'                    => false,
-            'keep_multiple_spaces_after_comma' => false,
-            'on_multiline'                     => 'ensure_fully_multiline'
-        ],
+        'method_argument_space'                   => ['after_heredoc' => false,'keep_multiple_spaces_after_comma' => false,'on_multiline' => 'ensure_fully_multiline'],
         'method_chaining_indentation'             => true,
         'native_function_type_declaration_casing' => true,
         'no_spaces_after_function_name'           => true,
@@ -40,6 +36,8 @@ return $config
         'phpdoc_order'                            => true,
         'phpdoc_scalar'                           => true,
         'yoda_style'                              => ['always_move_variable' => true,'equal' => true,'identical' => true,'less_and_greater' => false],
+        'ordered_imports'                         => true,
+        'no_unused_imports'                       => true,
     ])
     ->setFinder(
         PhpCsFixer\Finder::create()

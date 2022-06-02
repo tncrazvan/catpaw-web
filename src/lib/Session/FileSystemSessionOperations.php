@@ -36,7 +36,7 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
      */
     public function startSession(string $id): Promise {
         return new LazyPromise(function() use ($id) {
-            $session = Session::create();
+            $session  = Session::create();
             $filename = "$this->dirname/$id";
             if ((yield exists($filename))) {
                 $contents = '';
@@ -51,7 +51,7 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
                 $session->setStorage($data["STORAGE"]);
                 $session->setTime($data["TIME"]);
             } else {
-                $id = yield $this->makeSessionID();
+                $id      = yield $this->makeSessionID();
                 $storage = [];
                 $session->setStorage($storage);
                 $session->setTime(time());
@@ -142,7 +142,7 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
 
             yield $file->write(json_encode([
                 "STORAGE" => $session->storage(),
-                "TIME" => $session->getTime(),
+                "TIME"    => $session->getTime(),
             ]));
             yield $file->close();
             return true;

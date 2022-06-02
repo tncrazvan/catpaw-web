@@ -3,7 +3,6 @@
 namespace CatPaw\Web\Utilities;
 
 use function Amp\call;
-use Amp\LazyPromise;
 use Amp\Promise;
 use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Utilities\AsciiTable;

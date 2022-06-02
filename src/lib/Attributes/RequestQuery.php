@@ -50,9 +50,9 @@ class RequestQuery implements AttributeInterface {
 
             $result = match ($typeName) {
                 "string" => $this->toString($http),
-                "int" => $this->toInteger($http),
-                "float" => $this->toFloat($http),
-                "bool" => $this->toBool($http),
+                "int"    => $this->toInteger($http),
+                "float"  => $this->toFloat($http),
+                "bool"   => $this->toBool($http),
             };
             if ($result) {
                 $value = $result;

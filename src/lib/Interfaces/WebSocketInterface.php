@@ -2,7 +2,6 @@
 
 namespace CatPaw\Web\Interfaces;
 
-use Amp\Promise;
 use Amp\Websocket\Client;
 use Amp\Websocket\Message;
 use Amp\Websocket\Server\Gateway;

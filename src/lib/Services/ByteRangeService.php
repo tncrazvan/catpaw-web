@@ -20,8 +20,8 @@ class ByteRangeService {
      */
     private function parse(string $rangeQuery): SplFixedArray {
         $rangeQuery = str_replace('bytes=', '', $rangeQuery);
-        $ranges = preg_split('/,\s*/', $rangeQuery);
-        $cranges = count($ranges);
+        $ranges     = preg_split('/,\s*/', $rangeQuery);
+        $cranges    = count($ranges);
         if (0 === $cranges || '' === trim($ranges[0])) {
             throw new InvalidByteRangeQueryException("Byte range query does not include any ranges.");
         }
@@ -29,10 +29,10 @@ class ByteRangeService {
         $parsedRanges = new SplFixedArray($cranges);
 
         if (1 === $cranges) {
-            $range = $ranges[0];
+            $range         = $ranges[0];
             [$start, $end] = explode('-', $range);
-            $start = (int)$start;
-            $end = (int)('' !== $end ? $end : -1);
+            $start         = (int)$start;
+            $end           = (int)('' !== $end ? $end : -1);
 
             $parsedRanges[0] = [$start, $end];
             return $parsedRanges;
@@ -40,8 +40,8 @@ class ByteRangeService {
 
         for ($i = 0; $i < $cranges; $i++) {
             [$start, $end] = explode('-', $ranges[$i]);
-            $start = (int)$start;
-            $end = (int)('' !== $end ? $end : -1);
+            $start         = (int)$start;
+            $end           = (int)('' !== $end ? $end : -1);
 
             $parsedRanges[$i] = [$start, $end];
         }
@@ -67,7 +67,7 @@ class ByteRangeService {
         unset($headers['content-length']);
 
         $ranges = $this->parse($rangeQuery);
-        $count = $ranges->count();
+        $count  = $ranges->count();
 
         if (1 === $count) {
             [[$start, $end]] = $ranges;
@@ -99,10 +99,10 @@ class ByteRangeService {
         }
 
 
-        $boundary = Strings::uuid();
-        $contentType = $headers['content-type'] ?? 'text/plain';
+        $boundary                = Strings::uuid();
+        $contentType             = $headers['content-type'] ?? 'text/plain';
         $headers['content-type'] = "multipart/byterange; boundary=$boundary";
-        $length = 0;
+        $length                  = 0;
         foreach ($ranges as $r) {
             $length += $r[1] - $r[0];
         }

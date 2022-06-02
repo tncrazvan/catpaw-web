@@ -34,7 +34,7 @@ function markdown(HttpConfiguration $config, string $filename): Promise {
         //##############################################################
 
         $filenameMD = "./.cache/markdown$filename.html";
-        $filename = $config->httpWebroot.$filename;
+        $filename   = $config->httpWebroot.$filename;
 
         if (is_file($filenameMD)) {
             return $filenameMD;
@@ -51,7 +51,7 @@ function markdown(HttpConfiguration $config, string $filename): Promise {
         $unsafe = !str_ends_with($filenameLower, ".unsafe.md");
 
         $chunkSize = 65536;
-        $contents = '';
+        $contents  = '';
 
         while (!$html->eof()) {
             $chunk = yield $html->read($chunkSize);
@@ -74,15 +74,15 @@ function markdown(HttpConfiguration $config, string $filename): Promise {
 
 function notfound(HttpConfiguration $config): Closure {
     $MARKDOWN = 0;
-    $HTML = 1;
-    $OTHER = 2;
+    $HTML     = 1;
+    $OTHER    = 2;
 
     return function(
         #[RequestHeader("range")] false | array $range,
         Request $request,
         ByteRangeService $service,
     ) use ($config, $MARKDOWN, $HTML, $OTHER) {
-        $path = urldecode($request->getUri()->getPath());
+        $path     = urldecode($request->getUri()->getPath());
         $filename = $config->httpWebroot.$path;
         if (yield isDirectory($filename)) {
             if (!str_ends_with($filename, '/')) {
@@ -116,7 +116,7 @@ function notfound(HttpConfiguration $config): Closure {
                 return cached($config, $service->response(
                     rangeQuery: $range[0] ?? "",
                     headers   : [
-                        "Content-Type" => Mime::getContentType($filename),
+                        "Content-Type"   => Mime::getContentType($filename),
                         "Content-Length" => $length,
                     ],
                     writer    : new class($filename) implements ByteRangeWriterInterface {
@@ -152,19 +152,19 @@ function notfound(HttpConfiguration $config): Closure {
                 return cached($config, new Response(
                     code          : Status::OK,
                     headers       : [
-                        "Accept-Ranges" => "bytes",
-                        "Content-Type" => Mime::getContentType($filename),
+                        "Accept-Ranges"  => "bytes",
+                        "Content-Type"   => Mime::getContentType($filename),
                         "Content-Length" => $length,
                     ],
                     stringOrStream: new IteratorStream(
                         new Producer(function($emit) use ($filename) {
-                                            /** @var File $file */
-                                            $file = yield openFile($filename, "r");
-                                            while ($chunk = yield $file->read(65536)) {
-                                                yield $emit($chunk);
-                                            }
-                                            yield $file->close();
-                                        })
+                            /** @var File $file */
+                            $file = yield openFile($filename, "r");
+                            while ($chunk = yield $file->read(65536)) {
+                                yield $emit($chunk);
+                            }
+                            yield $file->close();
+                        })
                     )
                 ));
             }

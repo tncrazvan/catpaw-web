@@ -42,7 +42,7 @@ class RequestBody implements AttributeInterface {
             $http
         ) {
             $className = $reflection->getType()->getName() ?? '';
-            $value = match ($className) {
+            $value     = match ($className) {
                 "array" => $this->toArray(
                     body       : yield $http->request->getBody()->buffer(),
                     contentType: $http->request->getHeader("Content-Type") ?? '',
