@@ -14,12 +14,12 @@
   ],
   "scripts": {
     "load": "composer dump-autoload -o",
-    "script": "php ./vendor/catpaw/core/scripts/start.php",
+    "script": "php -dxdebug.start_with_request=yes -dxdebug.mode=debug ./vendor/catpaw/core/scripts/start.php",
     "fix": [
       "php ./vendor/bin/php-cs-fixer fix src",
       "php ./vendor/bin/php-cs-fixer fix tests"
     ],
-    "test": "php vendor/bin/phpunit tests"
+    "test": "php -dxdebug.start_with_request=yes -dxdebug.mode=debug vendor/bin/phpunit tests"
   },
   "authors": [
     {
