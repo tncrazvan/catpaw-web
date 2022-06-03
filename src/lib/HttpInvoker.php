@@ -35,7 +35,6 @@ use function is_object;
 use function json_encode;
 use ReflectionException;
 use ReflectionFunction;
-use SplFixedArray;
 use stdClass;
 use Throwable;
 
@@ -110,17 +109,6 @@ class HttpInvoker {
 
 
         for ($i = 0; $i < $len; $i++) {
-            // if(!isset($this->cache[$requestMethod][$requestPath][$i])) {
-            // 	$reflection = new ReflectionFunction($callbacks[$i]);
-            // 	$consumes = yield Consumes::findByFunction($reflection);
-            // 	$produces = yield Produces::findByFunction($reflection);
-
-            // 	$this->cache[$requestMethod][$requestPath][$i] = new SplFixedArray(3);
-
-            // 	$this->cache[$requestMethod][$requestPath][$i][self::REFLECTION] = $reflection;
-            // 	$this->cache[$requestMethod][$requestPath][$i][self::CONSUMES] = $consumes;
-            // 	$this->cache[$requestMethod][$requestPath][$i][self::PRODUCES] = $produces;
-            // }
             $reflection = Route::findReflection($requestMethod, $requestPath, $i);
             $consumes   = Route::findConsumes($requestMethod, $requestPath, $i);
             $produces   = Route::findProduces($requestMethod, $requestPath, $i);
@@ -138,7 +126,7 @@ class HttpInvoker {
                 consumes		  : $consumes,
             );
 
-            if (!$continue && $len > $i + 1) {
+            if (!$continue && $i < $len - 1) {
                 //a filter just interrupted the response.
                 $this->contextualize(
                     context : $context,
@@ -213,11 +201,6 @@ class HttpInvoker {
         );
     }
 
-    private array $cache     = [];
-    private const REFLECTION = 0;
-    private const CONSUMES   = 1;
-    private const PRODUCES   = 2;
-
     /**
      * @param  HttpConfiguration $configuration
      * @param  HttpContext       $context
@@ -289,7 +272,7 @@ class HttpInvoker {
         /** @var WebSocketInterface|Response|string|int|float|bool */
         $response = yield call($callback, ...$dependencies);
 
-        if ($index < $max && true !== $response) {
+        if ($index < $max && $response) {
             foreach ($response->getHeaders() as $key => $value) {
                 $context->response->setHeader($key, $value);
             }
@@ -303,9 +286,9 @@ class HttpInvoker {
         }
 
 
-        if (!$response) {
-            return false;
-        }
+        // if (!$response) {
+        //     return false;
+        // }
 
         if ($response instanceof WebSocketInterface) {
             try {

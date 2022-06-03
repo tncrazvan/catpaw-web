@@ -62,10 +62,12 @@ class WebServer {
             /** @var LoggerInterface */
             $logger = yield self::logger();
             $logger->info("Attempting to stop server...");
-            if (self::$httpServer) {
+            try {
                 yield self::$httpServer->stop();
+                self::$started = false;
+            } catch (Throwable $e) {
+                $logger->warning($e->getMessage());
             }
-            self::$started = false;
             Route::clearAll();
             Container::clearAll();
             $logger->info("Server stopped.");
@@ -295,6 +297,11 @@ class WebServer {
         if (!isset($callbacks[$requestMethod])) {
             return [false, []];
         }
+
+        $finalLocalPath      = false;
+        $finalAllParams      = [];
+        $countFinalAllParams = -1;
+
         foreach ($callbacks[$requestMethod] as $localPath => $callback) {
             if (!isset(self::$cache[$requestMethod])) {
                 self::$cache[$requestMethod] = [];
@@ -321,9 +328,18 @@ class WebServer {
                 }
             }
             if ($ok) {
-                return [$localPath, $allParams];
+                $countParams = count($params);
+                if (0 === $countParams) {
+                    return [$localPath, $allParams];
+                }
+
+                if ($countParams < $countFinalAllParams || -1 === $countFinalAllParams) {
+                    $finalLocalPath      = $localPath;
+                    $finalAllParams      = $allParams;
+                    $countFinalAllParams = $countParams;
+                }
             }
         }
-        return [false, []];
+        return [$finalLocalPath, $finalAllParams];
     }
 }
