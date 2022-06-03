@@ -83,7 +83,7 @@ class Path extends Service {
                 }
 
 
-                $GET_OF_METHOD      = ((yield GET::findByMethod($method))     ?? $GET)     ?? new GET();
+                $GET_OF_METHOD      = ((yield GET::findByMethod($method))     ?? $GET);
                 $DELETE_OF_METHOD   = (yield DELETE::findByMethod($method))   ?? $DELETE;
                 $POST_OF_METHOD     = (yield POST::findByMethod($method))     ?? $POST;
                 $PUT_OF_METHOD      = (yield PUT::findByMethod($method))      ?? $PUT;
@@ -215,7 +215,7 @@ class Path extends Service {
                     $methodValue = 'UNLOCK';
                 }
 
-                if (!$exposed && ($consumesOfClass || $producesOfClass)) {
+                if (!$exposed && ($consumesOfClass || $producesOfClass || $filtersOfMethod)) {
                     yield Route::get($pathValue, $closure);
                     $exposed = true;
                 }
