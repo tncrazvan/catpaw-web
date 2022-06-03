@@ -184,19 +184,22 @@ class HttpInvoker {
             return;
         }
 
+        $isarray  = is_array($context->prepared);
+        $isobject = $isarray?false:is_object($context->prepared);
+        
         $context->response->setBody(
             match ($contentType) {
-                'application/json' => json_encode($context->prepared),
-                'application/xml', 'text/xml' => is_array($context->prepared)
+                'application/json' => $isarray || $isobject ? json_encode($context->prepared): $context->prepared,
+                'application/xml', 'text/xml' => $isarray
                     ? XMLSerializer::generateValidXmlFromArray($$context->prepared) ?? ""
-                    : (is_object($context->prepared)
+                    : ($isobject
                         ? (
                             XMLSerializer::generateValidXmlFromObj(
                                 Caster::cast($$context->prepared, stdClass::class)
                             ) ?? ""
                         )
                         : XMLSerializer::generateValidXmlFromArray([$$context->prepared]) ?? ""),
-                default => is_array($context->prepared) || is_object($context->prepared)?json_encode($context->prepared):$context->prepared
+                default => $isarray || $isobject?json_encode($context->prepared):$context->prepared
             }
         );
     }
