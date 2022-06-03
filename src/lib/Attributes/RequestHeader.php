@@ -31,7 +31,7 @@ class RequestHeader implements AttributeInterface {
                 'double' => (double)$http->request->getHeader($this->key),
                 'float'  => (float)$http->request->getHeader($this->key),
                 'array'  => $http->request->getHeaderArray($this->key),
-                default  => $http->request->getHeader($this->key),
+                default  => $value,
             };
         });
     }
