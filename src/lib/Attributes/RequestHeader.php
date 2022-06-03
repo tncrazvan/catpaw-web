@@ -24,7 +24,15 @@ class RequestHeader implements AttributeInterface {
             &$value,
             $http
         ) {
-            $value = $http->request->getHeaderArray($this->key);
+            $value = match ($reflection->getType()->getName()) {
+                'string' => $http->request->getHeader($this->key),
+                'bool'   => (bool)$http->request->getHeader($this->key),
+                'int'    => (int)$http->request->getHeader($this->key),
+                'double' => (double)$http->request->getHeader($this->key),
+                'float'  => (float)$http->request->getHeader($this->key),
+                'array'  => $http->request->getHeaderArray($this->key),
+                default  => $http->request->getHeader($this->key),
+            };
         });
     }
 }
