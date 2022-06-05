@@ -47,9 +47,21 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
                 }
                 yield $file->close();
 
-                $data = json_decode($contents, true) ?? false;
-                $session->setStorage($data["STORAGE"]);
-                $session->setTime($data["TIME"]);
+                try {
+                    $data = json_decode($contents, true) ?? false;
+                } catch (Throwable) {
+                    $data = false;
+                }
+
+                if ($data) {
+                    $storage = $data["STORAGE"] ?? [];
+                    $session->setStorage($storage);
+                    $session->setTime($data["TIME"] ?? time());
+                } else {
+                    $storage = [];
+                    $session->setStorage($storage);
+                    $session->setTime(time());
+                }
             } else {
                 $id      = yield $this->makeSessionID();
                 $storage = [];
@@ -97,7 +109,7 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
                 $session->setId(yield $this->makeSessionID());
                 yield $this->setSession($session);
                 return $session;
-            } catch (Throwable) {
+            } catch (Throwable $e) {
                 return false;
             }
         });

@@ -3,6 +3,7 @@
 namespace CatPaw\Web;
 
 use Amp\ByteStream\InputStream;
+
 use function Amp\call;
 
 use Amp\Http\Server\Request;
@@ -274,7 +275,8 @@ class HttpInvoker {
         }
 
         /** @var WebSocketInterface|Response|string|int|float|bool */
-        $response = yield call($callback, ...$dependencies);
+        $response = yield call(fn() => $callback(...$dependencies));
+        
 
         if ($index < $max && $response) {
             foreach ($response->getHeaders() as $key => $value) {
@@ -285,7 +287,7 @@ class HttpInvoker {
             return false;
         }
 
-        if (($sessionIDCookie = $context->response->getCookie("session-id") ?? false)) {
+        if (($sessionIDCookie = $context->request->getCookie("session-id") ?? false)) {
             yield $this->sessionOperations->persistSession($sessionIDCookie->getValue());
         }
 

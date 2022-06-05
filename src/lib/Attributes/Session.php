@@ -83,25 +83,25 @@ class Session implements AttributeInterface {
     }
 
 
-    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
-        /** @var false|HttpContext $http */
+    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $context): Promise {
+        /** @var false|HttpContext $context */
         return new LazyPromise(function() use (
             $reflection,
             &$value,
-            $http
+            $context
         ) {
-            if (!$http) {
+            if (!$context) {
                 return;
             }
             /** @var Session $session */
-            $sessionIDCookie = $http->request->getCookie("session-id") ?? false;
+            $sessionIDCookie = $context->request->getCookie("session-id") ?? false;
             $sessionID       = $sessionIDCookie ? $sessionIDCookie->getValue() : '';
-            $session         = yield $http->sessionOperations->validateSession(id: $sessionID);
+            $session         = yield $context->sessionOperations->validateSession(id: $sessionID);
             if (!$session) {
-                $session = yield $http->sessionOperations->startSession($sessionID);
+                $session = yield $context->sessionOperations->startSession($sessionID);
             }
             if ($session->getId() !== $sessionID) {
-                $http->response->setCookie(new ResponseCookie("session-id", $session->getId()));
+                $context->response->setCookie(new ResponseCookie("session-id", $session->getId()));
             }
 
             $value = $session;
