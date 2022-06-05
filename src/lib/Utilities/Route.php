@@ -206,10 +206,11 @@ class Route {
      */
     private static function findPathPatterns(
         string $path,
-        array $params
+        array $params,
+        int $index,
     ): Generator {
-        if (isset(self::$pathPatternsCache[$path])) {
-            return self::$pathPatternsCache[$path];
+        if (isset(self::$pathPatternsCache[$path][$index])) {
+            return self::$pathPatternsCache[$path][$index];
         }
 
         $targets = [
@@ -317,7 +318,7 @@ class Route {
             return [$ok, $variables];
         };
 
-        self::$pathPatternsCache[$path] = $resolver;
+        self::$pathPatternsCache[$path][$index] = $resolver;
 
         return $resolver;
     }
@@ -363,8 +364,10 @@ class Route {
                     self::$consumes[$method][$path][$i] = yield Consumes::findByFunction($reflection);
                     self::$produces[$method][$path][$i] = yield Produces::findByFunction($reflection);
 
-                    self::$patterns[$method][$path][] = yield from self::findPathPatterns($path, $reflection->getParameters());
-                    self::$routes[$method][$path][]   = $callback;
+                    $args = $reflection->getParameters();
+
+                    self::$patterns[$method][$path][$i][] = yield from self::findPathPatterns($path, $args, $i);
+                    self::$routes[$method][$path][$i]     = $callback;
                     //TODO refactor this attributes section
                     $context = new class(method: $method, path: $path, isFilter: $isFilter, ) extends RouteHandlerContext {
                         public function __construct(

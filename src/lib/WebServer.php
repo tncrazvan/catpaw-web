@@ -302,28 +302,30 @@ class WebServer {
         $finalAllParams      = [];
         $countFinalAllParams = -1;
 
-        foreach ($callbacks[$requestMethod] as $localPath => $callback) {
+        foreach ($callbacks[$requestMethod] as $localPath => $filters) {
             if (!isset(self::$cache[$requestMethod])) {
                 self::$cache[$requestMethod] = [];
             }
             if (isset(self::$cache[$requestMethod][$localPath])) {
-                $patterns = self::$cache[$requestMethod][$localPath];
+                $patternGroups = self::$cache[$requestMethod][$localPath];
             } else {
-                $patterns = [];
+                $patternGroups = [];
                 foreach (Route::findPattern($requestMethod, $localPath) as $g) {
-                    $patterns[] = $g;
+                    $patternGroups[] = $g;
                 }
-                self::$cache[$requestMethod][$localPath] = $patterns;
+                self::$cache[$requestMethod][$localPath] = $patternGroups;
             }
             $ok        = false;
             $allParams = [];
             /** @var callable $pattern */
-            foreach ($patterns as $pattern) {
-                [$k, $params] = $pattern($requestPath);
-                if ($k) {
-                    $ok = true;
-                    foreach ($params as $key => $value) {
-                        $allParams[$key] = $value;
+            foreach ( $patternGroups as $i => $patterns ) {
+                foreach ($patterns as $pattern) {
+                    [$k, $params] = $pattern($requestPath);
+                    if ($k) {
+                        $ok = true;
+                        foreach ($params as $key => $value) {
+                            $allParams[$i][$key] = $value;
+                        }
                     }
                 }
             }
