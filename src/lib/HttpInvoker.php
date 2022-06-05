@@ -93,6 +93,8 @@ class HttpInvoker {
             }
         }
 
+        $eventState = new EventState([]);
+
         for ($i = 0; $i < $len; $i++) {
             $reflection = Route::findReflection($requestMethod, $requestPath, $i);
             $consumes   = Route::findConsumes($requestMethod, $requestPath, $i);
@@ -125,6 +127,7 @@ class HttpInvoker {
                 callback          : $callbacks[$i],
                 reflection		  : $reflection,
                 consumes		  : $consumes,
+                eventState        : $eventState,
             );
 
             if (!$continue && $i < $len - 1) {
@@ -228,6 +231,7 @@ class HttpInvoker {
         Closure $callback,
         ReflectionFunction $reflection,
         false|Consumes $consumes,
+        EventState $eventState,
     ): Generator {
 
         /** @var false|Consumes $produces */
@@ -256,8 +260,9 @@ class HttpInvoker {
             $dependencies = yield Container::dependencies($reflection, [
                 "id"    => ["$index#".$context->request->getMethod(), $context->request->getUri()->getPath()],
                 "force" => [
-                    Request::class  => $context->request,
-                    Response::class => $context->response,
+                    Request::class    => $context->request,
+                    Response::class   => $context->response,
+                    EventState::class => $eventState,
                 ],
                 "context" => $context,
             ]);
@@ -274,17 +279,24 @@ class HttpInvoker {
             return true;
         }
 
-        /** @var WebSocketInterface|Response|string|int|float|bool */
+        /** @var WebSocketInterface|EventState|Response|string|int|float|bool */
         $response = yield call(fn() => $callback(...$dependencies));
         
 
         if ($index < $max && $response) {
-            foreach ($response->getHeaders() as $key => $value) {
-                $context->response->setHeader($key, $value);
+            if (!$response instanceof EventState) {
+                foreach ($response->getHeaders() as $key => $value) {
+                    $context->response->setHeader($key, $value);
+                }
+                $context->response->setStatus($response->getStatus());
+                $context->prepared = $response->getBody();
+                return false;
             }
-            $context->response->setStatus($response->getStatus());
-            $context->prepared = $response->getBody();
-            return false;
+
+            $eventState->set([
+                ...$eventState->get(),
+                ...$response->get(),
+            ]);
         }
 
         if (($sessionIDCookie = $context->request->getCookie("session-id") ?? false)) {
