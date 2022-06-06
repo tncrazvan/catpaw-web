@@ -285,11 +285,15 @@ class HttpInvoker {
 
         if ($index < $max && $response) {
             if (!$response instanceof EventState) {
-                foreach ($response->getHeaders() as $key => $value) {
-                    $context->response->setHeader($key, $value);
+                if ($response instanceof Response) {
+                    foreach ($response->getHeaders() as $key => $value) {
+                        $context->response->setHeader($key, $value);
+                    }
+                    $context->response->setStatus($response->getStatus());
+                    $context->prepared = $response->getBody();
+                } else {
+                    $context->prepared = $response;
                 }
-                $context->response->setStatus($response->getStatus());
-                $context->prepared = $response->getBody();
                 return false;
             }
 
