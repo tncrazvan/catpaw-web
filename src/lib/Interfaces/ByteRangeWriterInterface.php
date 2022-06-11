@@ -2,25 +2,15 @@
 
 namespace CatPaw\Web\Interfaces;
 
-use Amp\Promise;
-
 interface ByteRangeWriterInterface {
-    /**
-     * @return Promise
-     */
-    public function start(): Promise;
+    public function start();
 
     /**
-     * @param  callable      $emit
-     * @param  int           $start
-     * @param  int           $length
-     * @return Promise<void>
+     * @param callable $emit
+     * @param int      $start
+     * @param int      $length
      */
-    public function data(callable $emit, int $start, int $length): Promise;
-
-
-    /**
-     * @return Promise
-     */
-    public function end(): Promise;
+    public function data(callable $emit, int $start, int $length);
+    
+    public function end();
 }

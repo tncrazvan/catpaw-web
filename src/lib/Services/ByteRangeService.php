@@ -13,6 +13,8 @@ use CatPaw\Web\Exceptions\InvalidByteRangeQueryException;
 use CatPaw\Web\Interfaces\ByteRangeWriterInterface;
 use SplFixedArray;
 
+use function Amp\call;
+
 #[Service]
 class ByteRangeService {
     /**
@@ -89,9 +91,9 @@ class ByteRangeService {
                                 return;
                             }
 
-                            yield $writer->start();
-                            yield $writer->data($emit, $start, $end - $start + 1);
-                            yield $writer->end();
+                            yield call($writer->start(...));
+                            yield call($writer->data(...),$emit, $start, $end - $start + 1);
+                            yield call($writer->end(...));
                         }
                     )
                 )
