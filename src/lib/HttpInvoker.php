@@ -95,13 +95,15 @@ class HttpInvoker {
 
         $eventState = new EventState([]);
 
+        $response = new Response();
+        
         for ($i = 0; $i < $len; $i++) {
             $reflection = Route::findReflection($requestMethod, $requestPath, $i);
             $consumes   = Route::findConsumes($requestMethod, $requestPath, $i);
             $produces   = Route::findProduces($requestMethod, $requestPath, $i);
 
             /** @var HttpContext $http */
-            $context = new class(sessionOperations: $this->sessionOperations, eventID: "$requestMethod:$requestPath", query: $query, params: $requestPathParameters[$i] ?? [], request: $request, response: new Response(), prepared: false) extends HttpContext {
+            $context = new class(sessionOperations: $this->sessionOperations, eventID: "$requestMethod:$requestPath", query: $query, params: $requestPathParameters[$i] ?? [], request: $request, response: $response, prepared: false) extends HttpContext {
                 public function __construct(
                     public SessionOperationsInterface $sessionOperations,
                     public string $eventID,

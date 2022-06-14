@@ -145,8 +145,8 @@ class Path extends Service {
                 
                 $closure = [...$closureFilters, $method->getClosure($instance)];
 
-                $methodValue = '';
-                $exposed     = false;
+                
+                $exposed = false;
                 foreach ($METHOD_METHODS as $key => $value) {
                     if ($value) {
                         yield Route::custom($key, $pathValue, $closure);
@@ -161,22 +161,28 @@ class Path extends Service {
 
                 if (!$exposed && ($producesOfMethod || $consumesOfMethod || $filtersOfMethod)) {
                     yield Route::get($pathValue, $closure);
-                    $exposed = true;
+                    $exposed              = true;
+                    $CLASS_METHODS["GET"] = $closure;
                 }
 
                 if ($exposed) {
-                    if ($inheritsConsumes) {
-                        $indexi    = Route::findIndexedConsumes($methodValue, $pathValue);
-                        $lastIndex = count($indexi) - 1;
-
-                        Route::setConsumes($methodValue, $pathValue, $lastIndex, $consumesOfClass);
-                    }
-
-                    if ($inheritsProduces) {
-                        $indexi    = Route::findIndexedProduces($methodValue, $pathValue);
-                        $lastIndex = count($indexi) - 1;
-
-                        Route::setProduces($methodValue, $pathValue, $lastIndex, $producesOfClass);
+                    foreach ($METHOD_METHODS as $key => $value) {
+                        if (!$value) {
+                            continue;
+                        }
+                        if ($inheritsConsumes) {
+                            $indexi    = Route::findIndexedConsumes($key, $pathValue);
+                            $lastIndex = count($indexi) - 1;
+    
+                            Route::setConsumes($key, $pathValue, $lastIndex, $consumesOfClass);
+                        }
+    
+                        if ($inheritsProduces) {
+                            $indexi    = Route::findIndexedProduces($key, $pathValue);
+                            $lastIndex = count($indexi) - 1;
+    
+                            Route::setProduces($key, $pathValue, $lastIndex, $producesOfClass);
+                        }
                     }
                 }
             }
