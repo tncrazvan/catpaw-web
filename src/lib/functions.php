@@ -125,20 +125,26 @@ function notfound(HttpConfiguration $config): Closure {
                         public function __construct(private string $filename) {
                         }
 
-                        public function start() {
-                            $this->file = yield openFile($this->filename, "r");
+                        public function start(): Promise {
+                            return call(function() {
+                                $this->file = yield openFile($this->filename, "r");
+                            });
                         }
 
 
-                        public function data(callable $emit, int $start, int $length) {
-                            yield $this->file->seek($start);
-                            $data = yield $this->file->read($length);
-                            yield $emit($data);
+                        public function data(callable $emit, int $start, int $length): Promise {
+                            return call(function() use ($emit, $start, $length) {
+                                yield $this->file->seek($start);
+                                $data = yield $this->file->read($length);
+                                yield $emit($data);
+                            });
                         }
 
 
                         public function end(): Promise {
-                            yield $this->file->close();
+                            return new LazyPromise(function() {
+                                yield $this->file->close();
+                            });
                         }
                     }
                 ));

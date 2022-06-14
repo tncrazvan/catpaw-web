@@ -81,7 +81,12 @@ class Path extends Service {
                 if (!($pathAttribute = yield Path::findByMethod($method))) {
                     $pathValue = preg_replace('/\/+/', '/', $classPathValue);
                 } else {
-                    $pathValue = preg_replace('/\/+/', '/', $classPathValue.$pathAttribute->getValue());
+                    $methodPathValue = $pathAttribute->getValue();
+                    if (!str_starts_with($methodPathValue, ':')) {
+                        $methodPathValue = "/$methodPathValue";
+                    }
+
+                    $pathValue = preg_replace('/\/+/', '/', $classPathValue.$methodPathValue);
                 }
 
                 $METHOD_METHODS = [
