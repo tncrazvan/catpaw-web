@@ -17,8 +17,11 @@ class WebServerTest extends AsyncTestCase {
     public function testWebServer():Generator {
         $http = HttpClientBuilder::buildDefault();
         yield WebServer::start(interfaces: "127.0.0.1:8000");
-        yield Container::load(dirname(__FILE__).'/../composer.json');
+        yield Container::load([
+            \realpath(__DIR__."/Controller")
+        ]);
 
+        echo PHP_EOL.Container::describe().PHP_EOL;
         echo PHP_EOL.Route::describe().PHP_EOL;
 
         yield from $this->testGet($http);
