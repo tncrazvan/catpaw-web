@@ -12,7 +12,7 @@
         "name": "Launch (paw)",
         "type": "php",
         "request": "launch",
-        "program": "${workspaceFolder}/vendor/catpaw/core/scripts/start.php",
+        "program": "${workspaceFolder}/bin/start",
         "cwd": "${workspaceFolder}",
         "args": ["${file}"],
         "port": 0,
