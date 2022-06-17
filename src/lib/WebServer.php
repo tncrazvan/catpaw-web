@@ -16,6 +16,7 @@ use Amp\Socket\BindContext;
 use Amp\Socket\Certificate;
 use Amp\Socket\Server;
 use Amp\Socket\ServerTlsContext;
+use CatPaw\Bootstrap;
 use CatPaw\Utilities\Container;
 use CatPaw\Utilities\LoggerFactory;
 use CatPaw\Web\Attributes\Session;
