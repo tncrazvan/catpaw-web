@@ -114,6 +114,10 @@ class WebServer {
             self::$started = true;
 
 
+            Bootstrap::onKill(function() {
+                yield WebServer::stop();
+            });
+
             $config = new HttpConfiguration();
 
             Container::setObject(HttpConfiguration::class, $config);
