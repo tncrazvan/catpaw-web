@@ -282,7 +282,7 @@ class HttpInvoker {
         }
 
         /** @var WebSocketInterface|EventState|Response|string|int|float|bool */
-        $response = yield call($callback, ...$dependencies);
+        $response = yield call(fn() => $callback(...$dependencies));
         
 
         if ($index < $max && $response) {
