@@ -9,12 +9,13 @@ use CatPaw\Web\Attributes\Produces;
 use CatPaw\Web\Attributes\PUT;
 
 use CatPaw\Web\Attributes\RequestBody;
+use CatPaw\Web\Attributes\Session;
 use DomainException;
 
 abstract class SPA {
-    protected abstract function setState(array $state);
-    protected abstract function getState():array;
-
+    protected abstract function setState(array $state, array &$session):void;
+    protected abstract function getState(array &$session):array;
+    
     /**
      * See credits.
      * @see https://stackoverflow.com/a/173479
@@ -31,8 +32,10 @@ abstract class SPA {
     #[GET]
     #[Path(":state")]
     #[Produces("application/json")]
-    public function get():array {
-        $state = $this->getState();
+    public function get(
+        #[Session] array &$session
+    ):array {
+        $state = $this->getState($session);
 
         if (!$this->isAssoc($state)) {
             throw new DomainException("All SPA states must be associative arrays.");
@@ -45,8 +48,9 @@ abstract class SPA {
     #[Path(":state")]
     #[Consumes("application/json")]
     public function put(
-        #[RequestBody] array $state
+        #[RequestBody] array $state,
+        #[Session] array &$session
     ) {
-        $this->setState($state);
+        $this->setState($state, $session);
     }
 }
