@@ -34,7 +34,7 @@
       "CatPaw\\Web\\": "src/lib/"
     },
     "files": [
-      "src/lib/functions.m.php"
+      "src/functions.php"
     ]
   },
   "require": {
