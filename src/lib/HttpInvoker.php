@@ -305,7 +305,7 @@ class HttpInvoker {
             ]);
         }
 
-        if (($sessionIDCookie = $context->request->getCookie("session-id") ?? false)) {
+        if (($sessionIDCookie = $context->response->getCookie("session-id") ?? false)) {
             yield $this->sessionOperations->persistSession($sessionIDCookie->getValue());
         }
 

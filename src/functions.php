@@ -199,8 +199,11 @@ function cached(HttpConfiguration $config, Response $response): Response {
     return $response;
 }
 
-
 function lazy(string $id, mixed $value):array {
+    global $lazyStates;
+    if (isset($lazyStates[$id])) {
+        return $lazyStates[$id];
+    }
     // $id    = Strings::uuid();
     $path  = "/:lazy:$id";
     $key   = "__lazy;$id";
@@ -214,6 +217,13 @@ function lazy(string $id, mixed $value):array {
     ) use (&$value, $key) {
         $value = $payload[$key];
     });
+
+
+    if (!$lazyStates) {
+        $lazyStates = [];
+    }
+
+    $lazyStates[$id] = $entry;
 
     return $entry;
 }
