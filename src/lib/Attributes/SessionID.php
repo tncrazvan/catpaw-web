@@ -17,7 +17,7 @@ class SessionID implements AttributeInterface {
     public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $context): Promise {
         return call(function() use ($context, &$value) {
             /** @var HttpContext $context */
-            $value = $context->response->getCookie("session-id")->getValue();
+            $value = $context->response->getCookie("session-id")?->getValue() ?? $context->request->getCookie("session-id")?->getValue() ?? null;
         });
     }
 }
