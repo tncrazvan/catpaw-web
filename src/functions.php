@@ -200,8 +200,8 @@ function cached(HttpConfiguration $config, Response $response): Response {
 }
 
 
-function lazy(mixed $value):array {
-    $id    = Strings::uuid();
+function lazy(string $id, mixed $value):array {
+    // $id    = Strings::uuid();
     $path  = "/:lazy:$id";
     $key   = "__lazy;$id";
     $entry = [ $key => $path ];
