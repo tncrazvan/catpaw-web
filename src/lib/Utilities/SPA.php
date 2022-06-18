@@ -15,6 +15,12 @@ abstract class SPA {
     protected abstract function setState(array $state);
     protected abstract function getState():array;
 
+    /**
+     * See credits.
+     * @see https://stackoverflow.com/a/173479
+     * @param  array $arr
+     * @return bool
+     */
     private function isAssoc(array $arr) {
         if ([] === $arr) {
             return false;
