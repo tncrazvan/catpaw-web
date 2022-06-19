@@ -16,15 +16,12 @@ use Amp\LazyPromise;
 use Amp\Producer;
 use Amp\Promise;
 use CatPaw\Utilities\Strings;
-use CatPaw\Web\Attributes\Consumes;
-use CatPaw\Web\Attributes\Produces;
-use CatPaw\Web\Attributes\RequestBody;
 use CatPaw\Web\Attributes\RequestHeader;
 use CatPaw\Web\Exceptions\InvalidByteRangeQueryException;
 use CatPaw\Web\Interfaces\ByteRangeWriterInterface;
 use CatPaw\Web\Services\ByteRangeService;
+use CatPaw\Web\Utilities\Lazy;
 use CatPaw\Web\Utilities\Mime;
-use CatPaw\Web\Utilities\Route;
 use Closure;
 use Throwable;
 
@@ -199,7 +196,15 @@ function cached(HttpConfiguration $config, Response $response): Response {
     return $response;
 }
 
-function lazy(string $id, mixed $value):array {
+/**
+ * Undocumented function
+ *
+ * @param  string $id      the id of the lazy state.
+ * @param  mixed  $value
+ * @param  mixed  $cascade whenever the lazy state is updated through http, this pointer will also be updated.
+ * @return Lazy
+ */
+function lazy(string $id, mixed $value):Lazy {
     global $lazyStates;
     if (isset($lazyStates[$id])) {
         return $lazyStates[$id];
@@ -207,17 +212,13 @@ function lazy(string $id, mixed $value):array {
     // $id    = Strings::uuid();
     $path  = "/:lazy:$id";
     $key   = "__lazy;$id";
-    $entry = [ $key => $path ];
+    $entry = new Lazy(
+        path: $path,
+        key: $key,
+        value: $value,
+    );
 
-    Route::get($path, #[Produces("application/json")] function() use ($key, &$value) {
-        return [ $key => $value ];
-    });
-    Route::put($path, #[Consumes("application/json")] function(
-        #[RequestBody] array $payload
-    ) use (&$value, $key) {
-        $value = $payload[$key];
-    });
-
+    $entry->publish();
 
     if (!$lazyStates) {
         $lazyStates = [];
