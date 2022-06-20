@@ -18,6 +18,11 @@ class Lazy {
     ) {
     }
 
+    /**
+     * Expose the property through http.
+     *
+     * @return static
+     */
     public function publish():static {
         if ($this->published) {
             return $this;
@@ -37,6 +42,11 @@ class Lazy {
         return $this;
     }
 
+    /**
+     * Push updates to a given variable
+     * @param  mixed  $cascade variable to update
+     * @return static
+     */
     public function push(&$cascade):static {
         if (null !== $this->lastCascade && $this->lastCascade === $cascade) {
             return $this;
@@ -52,6 +62,11 @@ class Lazy {
         return $this;
     }
 
+    /**
+     * Build the metadata for the property.<br/>
+     * This metadata should be used by the frontend client to manage the property.
+     * @return array
+     */
     public function build():array {
         return [ $this->key => $this->path ];
     }

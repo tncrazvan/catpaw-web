@@ -197,7 +197,7 @@ function cached(HttpConfiguration $config, Response $response): Response {
 }
 
 /**
- * Undocumented function
+ * Create a lazy web property.
  *
  * @param  string $id      the id of the lazy state.
  * @param  mixed  $value
