@@ -15,7 +15,6 @@ use Amp\Http\Status;
 use Amp\LazyPromise;
 use Amp\Producer;
 use Amp\Promise;
-use CatPaw\Utilities\Strings;
 use CatPaw\Web\Attributes\RequestHeader;
 use CatPaw\Web\Exceptions\InvalidByteRangeQueryException;
 use CatPaw\Web\Interfaces\ByteRangeWriterInterface;
@@ -199,19 +198,18 @@ function cached(HttpConfiguration $config, Response $response): Response {
 /**
  * Undocumented function
  *
- * @param  string $id      the id of the lazy state.
+ * @param  string $path    http path of the property
  * @param  mixed  $value
  * @param  mixed  $cascade whenever the lazy state is updated through http, this pointer will also be updated.
  * @return Lazy
  */
-function lazy(string $id, mixed $value):Lazy {
+function lazy(string $path, mixed $value):Lazy {
     global $lazyStates;
-    if (isset($lazyStates[$id])) {
-        return $lazyStates[$id];
+    if (isset($lazyStates[$path])) {
+        return $lazyStates[$path];
     }
-    // $id    = Strings::uuid();
-    $path  = "/:lazy:$id";
-    $key   = "__lazy;$id";
+    
+    $key   = "__lazy;$path";
     $entry = new Lazy(
         path: $path,
         key: $key,
@@ -224,7 +222,7 @@ function lazy(string $id, mixed $value):Lazy {
         $lazyStates = [];
     }
 
-    $lazyStates[$id] = $entry;
+    $lazyStates[$path] = $entry;
 
     return $entry;
 }
