@@ -14,7 +14,22 @@ use CatPaw\Web\Attributes\SessionID;
 use DomainException;
 
 abstract class SPA {
+    /**
+     * Set the SPA state
+     *
+     * @param  array $state   new state
+     * @param  array $session user session
+     * @return void
+     */
     protected abstract function setState(array $state, array &$session):void;
+
+    /**
+     * get the SPA state
+     *
+     * @param  callable(string $value):string $id  takes a string as a parameter and returns an unique lazy id
+     * @param  array $session user session
+     * @return array
+     */
     protected abstract function getState(callable $id, array &$session):array;
 
     /**
