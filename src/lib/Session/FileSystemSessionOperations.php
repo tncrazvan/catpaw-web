@@ -85,8 +85,11 @@ class FileSystemSessionOperations implements SessionOperationsInterface {
                 $time = time();
                 if ($id) {
                     if (!isset($this->sessions[$id])) {
+                        /** @var Session */
                         $session = yield $this->startSession($id);
+                        $id      = $session->getId();
                     } else {
+                        /** @var Session */
                         $session = $this->sessions[$id];
                     }
 
