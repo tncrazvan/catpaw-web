@@ -13,7 +13,6 @@ class Lazy {
     private $lastCascade    = null;
     public function __construct(
         private string $path,
-        private string $key,
         private mixed &$value,
     ) {
     }
@@ -24,12 +23,12 @@ class Lazy {
         }
         $this->published = true;
         Route::get($this->path, #[Produces("application/json")] function() {
-            return [ $this->key => $this->value ];
+            return [ '!lazy' => $this->value ];
         });
         Route::put($this->path, #[Consumes("application/json")] function(
             #[RequestBody] array $payload
         ) {
-            $this->value = $payload[$this->key];
+            $this->value = $payload['!lazy'];
             if ($this->onUpdate) {
                 ($this->onUpdate)($this->value);
             }
@@ -53,6 +52,6 @@ class Lazy {
     }
 
     public function build():array {
-        return [ $this->key => $this->path ];
+        return [ '!lazy' => $this->path ];
     }
 }

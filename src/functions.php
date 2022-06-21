@@ -209,10 +209,8 @@ function lazy(string $path, mixed $value):Lazy {
         return $lazyStates[$path];
     }
     
-    $key   = "__lazy;$path";
     $entry = new Lazy(
         path: $path,
-        key: $key,
         value: $value,
     );
 
