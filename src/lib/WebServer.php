@@ -9,7 +9,6 @@ use Amp\Http\Server\Request;
 use Amp\Http\Server\RequestHandler\CallableRequestHandler;
 use Amp\Http\Server\Response;
 use Amp\Http\Status;
-use Amp\LazyPromise;
 use Amp\Loop;
 use Amp\Promise;
 use Amp\Socket\BindContext;
@@ -92,6 +91,7 @@ class WebServer {
         string $webroot = 'public',
         bool $showStackTrace = false,
         bool $showExceptions = false,
+        bool $redirectToSecure = false,
         array $pemCertificates = [],
         array $headers = [],
     ): Promise {
@@ -101,6 +101,7 @@ class WebServer {
             $webroot,
             $showStackTrace,
             $showExceptions,
+            $redirectToSecure,
             $pemCertificates,
             $headers,
         ) {
@@ -136,6 +137,7 @@ class WebServer {
             $config->httpWebroot          = $webroot;
             $config->httpShowStackTrace   = $showStackTrace;
             $config->httpShowExceptions   = $showExceptions;
+            $config->redirectToSecure     = $redirectToSecure;
             $config->headers              = $headers;
 
             yield self::init($config);
@@ -208,14 +210,17 @@ class WebServer {
             $server = self::$httpServer = new HttpServer(
                 $sockets,
                 new CallableRequestHandler(
-                    static fn(Request $request) => static::serve($config, $request, $invoker)
+                    static fn(Request $request) => static::serve($config, $request, $invoker, $logger)
                 ),
                 $logger
             );
 
-            $server->setErrorHandler(new class() implements ErrorHandler {
+            $server->setErrorHandler(new class($logger) implements ErrorHandler {
+                public function __construct(private LoggerInterface $logger) {
+                }
                 public function handleError(int $statusCode, string $reason = null, Request $request = null): Promise {
-                    return new LazyPromise(function() use ($statusCode, $reason, $request) {
+                    return call(function() use ($statusCode, $reason, $request) {
+                        $this->logger->error($reason);
                     });
                 }
             });
@@ -249,9 +254,17 @@ class WebServer {
     private static function serve(
         HttpConfiguration $config,
         Request $request,
-        HttpInvoker $invoker
+        HttpInvoker $invoker,
+        LoggerInterface $logger,
     ): Generator {
-        $logger        = yield Container::create(LoggerInterface::class);
+        $uri    = $request->getUri();
+        $scheme = $uri->getScheme();
+        if ($config->redirectToSecure && 'https' !== $scheme) {
+            return new Response(Status::FOUND, [
+                "Location" => preg_replace('/^http/', 'https', (string)$uri)
+            ]);
+        }
+        // $logger        = yield Container::create(LoggerInterface::class);
         $requestMethod = $request->getMethod();
         $requestUri    = $request->getUri();
         $requestPath   = $requestUri->getPath();
@@ -265,6 +278,7 @@ class WebServer {
                 requestMethod        : $requestMethod,
                 requestPath          : '@404',
                 requestPathParameters: $requestPathParameters,
+                configuration        : $config,
             );
 
             if (!$response) {
@@ -280,6 +294,7 @@ class WebServer {
                 requestMethod        : $requestMethod,
                 requestPath          : $requestPath,
                 requestPathParameters: $requestPathParameters,
+                configuration        : $config,
             );
 
             if (!$response) {

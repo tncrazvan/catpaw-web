@@ -29,6 +29,7 @@ class StartWebServer implements AttributeInterface {
         public string $webroot = 'public',
         public bool $showStackTrace = false,
         public bool $showExceptions = false,
+        public bool $redirectToSecure = false,
         public array $pemCertificates = [],
         public array $headers = [],
     ) {
@@ -43,6 +44,7 @@ class StartWebServer implements AttributeInterface {
             showStackTrace: $this->showStackTrace,
             showExceptions: $this->showExceptions,
             pemCertificates: $this->pemCertificates,
+            redirectToSecure: $this->redirectToSecure,
             headers: $this->headers,
         ));
     }

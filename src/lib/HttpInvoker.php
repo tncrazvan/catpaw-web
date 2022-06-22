@@ -72,9 +72,10 @@ class HttpInvoker {
         string $requestMethod,
         string $requestPath,
         array $requestPathParameters,
+        HttpConfiguration $configuration,
     ): Generator {
-        /** @var HttpConfiguration $config */
-        $configuration      = yield Container::create(HttpConfiguration::class);
+        // /** @var HttpConfiguration $config */
+        // $configuration      = yield Container::create(HttpConfiguration::class);
         $requestContentType = $request->getHeader("Content-Type") ?? '*/*';
         $callbacks          = Route::findRoute($requestMethod, $requestPath);
         $len                = count($callbacks);

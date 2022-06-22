@@ -33,6 +33,8 @@ class HttpConfiguration {
         ];
     }
 
+    public bool $redirectToSecure = false;
+
     /**
      * Default headers for static assets.
      * @var array
