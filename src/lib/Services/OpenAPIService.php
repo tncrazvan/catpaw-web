@@ -68,6 +68,7 @@ class OpenAPIService {
         array $parameters,
         array $responses,
     ):array {
+        $method      = \strtolower($method);
         $operationID = $this->createOperationID(
             method: $method,
             parameters: $parameters,
