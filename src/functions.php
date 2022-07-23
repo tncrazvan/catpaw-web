@@ -87,7 +87,9 @@ function notfound(HttpConfiguration $config): Closure {
         $filename = $config->httpWebroot.$path;
         if (yield isDirectory($filename)) {
             if (!str_ends_with($filename, '/')) {
-                $filename .= '/';
+                return new Response(Status::MOVED_PERMANENTLY, [
+                    "Location" => "$path/"
+                ]);
             }
 
             if (yield exists("{$filename}index.md")) {
