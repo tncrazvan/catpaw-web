@@ -120,7 +120,7 @@ class OpenAPIService {
     public function createExample(
         string $title,
         string $summary,
-        string $value,
+        array|string|int|float|bool $value,
     ):array {
         return [
             "$title" => [

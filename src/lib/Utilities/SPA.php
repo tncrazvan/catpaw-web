@@ -13,13 +13,13 @@ use CatPaw\Web\Attributes\RequestBody;
 use CatPaw\Web\Attributes\Session;
 use CatPaw\Web\Attributes\SessionID;
 use DomainException;
+use Generator;
 use ReflectionClass;
 
 abstract class SPA {
     private string $SPAPath = '';
 
-    #[Entry]
-    public function setup() {
+    #[Entry] public function setup():Generator {
         /** @var Path */
         $path          = yield Path::findByClass(new ReflectionClass(static::class));
         $this->SPAPath = $path->getValue();

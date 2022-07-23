@@ -7,11 +7,10 @@ use Amp\Promise;
 use Attribute;
 use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Attributes\Traits\CoreAttributeDefinition;
+use CatPaw\Utilities\ReflectionTypeManager;
 use CatPaw\Utilities\Strings;
 use CatPaw\Web\HttpContext;
 use ReflectionParameter;
-use ReflectionType;
-use ReflectionUnionType;
 
 #[Attribute]
 class Param implements AttributeInterface {
@@ -43,14 +42,12 @@ class Param implements AttributeInterface {
         ) {
             $name = $reflection->getName();
             if (!isset(self::$cache[$context->eventID])) {
-                $type = $reflection->getType();
-                if ($type instanceof ReflectionUnionType) {
-                    $typeName = $type->getTypes()[0]->getName();
-                } elseif ($type instanceof ReflectionType) {
-                    $typeName = $type->getName();
-                } else {
+                $type = ReflectionTypeManager::unwrap($reflection);
+                if (!$type) {
                     die(Strings::red("Handler \"$context->eventID\" must specify at least 1 type path parameter \"$name\".\n"));
                 }
+
+                $typeName = $type->getName();
 
                 self::$cache[$context->eventID] = $typeName;
             }
@@ -58,12 +55,6 @@ class Param implements AttributeInterface {
             $cname = self::$cache[$context->eventID];
 
             $value = $context->params[$name] ?? false;
-
-            if ('y' === $value) {
-                $value = true;
-            } elseif ('n' === $value) {
-                $value = false;
-            }
 
             if ("bool" === $cname) {
                 $value = filter_var($value, FILTER_VALIDATE_BOOLEAN);

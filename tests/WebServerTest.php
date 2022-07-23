@@ -45,7 +45,8 @@ class WebServerTest extends TestCase {
     private function testGet(HttpClient $http) {
         yield Route::get("/get", fn() => "hello world");
         $response = yield $http->request(new Request("http://127.0.0.1:8000/get"));
-        $this->assertEquals("hello world", yield $response->getBody()->buffer());
+        $actual   = yield $response->getBody()->buffer();
+        $this->assertEquals("hello world", $actual);
     }
 
     private function testGetWithParams(HttpClient $http) {
@@ -94,7 +95,8 @@ class WebServerTest extends TestCase {
 
         /** @var Response $response2 */
         $response2 = yield $http->request(new Request("http://127.0.0.1:8000/world", "GET"));
-        $this->assertEquals("hello world", yield $response2->getBody()->buffer());
+        $actual    = yield $response2->getBody()->buffer();
+        $this->assertEquals("hello world", $actual);
         $this->assertEquals("text/html", $response2->getHeader("Content-Type"));
 
         $request = new Request("http://127.0.0.1:8000/test", "GET");

@@ -46,7 +46,7 @@ class Lazy {
         }
 
         $this->onUpdate = function($value) use (&$cascade) {
-            $cascade = $value;
+            $cascade    = $value;
         };
         return $this;
     }
