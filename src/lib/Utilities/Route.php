@@ -462,6 +462,7 @@ class Route {
             pathContent: [
                 ...$api->createPathContent(
                     method: $method,
+                    operationID: \sha1("$method:$path:".\sha1(\json_encode($apiParameters))),
                     summary: 'todo: summary attribute',
                     parameters: $apiParameters,
                     responses: $responses,

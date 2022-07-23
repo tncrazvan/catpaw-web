@@ -111,8 +111,6 @@ class WebServerTest extends TestCase {
     }
 
     private function testOpenAPI(HttpClient $http, OpenAPIService $api) {
-
-
         /** @var Response $response */
         $response = yield $http->request(new Request("http://127.0.0.1:8000/openapi", "GET"));
         $text     = yield $response->getBody()->buffer();

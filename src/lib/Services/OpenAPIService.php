@@ -64,17 +64,12 @@ class OpenAPIService {
 
     public function createPathContent(
         string $method,
+        string $operationID,
         string $summary,
         array $parameters,
         array $responses,
     ):array {
-        $method      = \strtolower($method);
-        $operationID = $this->createOperationID(
-            method: $method,
-            parameters: $parameters,
-            responses: $responses,
-        );
-
+        $method = \strtolower($method);
         return [
             "$method" => [
                 "summary"     => $summary,
