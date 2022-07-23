@@ -479,7 +479,7 @@ class Route {
                         name: $query->getName(),
                         in: 'query',
                         description: $summary?$summary->getValue():(new Summary(value:''))->getValue(),
-                        required: true,
+                        required: false,
                         schema: $schema 
                                     ? $schema->getValue() 
                                     : $api->createSchema(type: $type->getName()),
