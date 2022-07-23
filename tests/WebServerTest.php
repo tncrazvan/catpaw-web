@@ -5,9 +5,11 @@ namespace Tests;
 use Amp\Http\Client\HttpClient;
 use Amp\Http\Client\HttpClientBuilder;
 use Amp\Http\Client\Request;
+use Amp\Http\Client\Response;
 use Amp\Loop;
 use CatPaw\Utilities\Container;
 use CatPaw\Web\Attributes\Param;
+use CatPaw\Web\Services\OpenAPIService;
 use CatPaw\Web\Utilities\Route;
 use CatPaw\Web\WebServer;
 use PHPUnit\Framework\TestCase;
@@ -24,10 +26,17 @@ class WebServerTest extends TestCase {
             echo PHP_EOL.Container::describe().PHP_EOL;
             echo PHP_EOL.Route::describe().PHP_EOL;
                 
-            yield from $this->testGet($http);
-            yield from $this->testGetWithParams($http);
-            yield from $this->testFilters($http);
-            yield from $this->testController($http);
+            yield Container::run(function(
+                OpenAPIService $api
+            ) use ($http) {
+                // $this->configureOpenAPI($api);
+                yield from $this->testGet($http);
+                yield from $this->testGetWithParams($http);
+                yield from $this->testFilters($http);
+                yield from $this->testController($http);
+                yield from $this->testOpenAPI($http, $api);
+            });
+
             
             yield WebServer::stop();
             Loop::stop();
@@ -49,8 +58,7 @@ class WebServerTest extends TestCase {
     }
 
     private function testFilters(HttpClient $http) {
-        $http = HttpClientBuilder::buildDefault();
-        $a    = function(\Amp\Http\Server\Response $response) {
+        $a = function(\Amp\Http\Server\Response $response) {
             $response->setHeader("Content-Type", "text/html");
         };
         $b = function() {
@@ -63,8 +71,6 @@ class WebServerTest extends TestCase {
     }
 
     private function testController(HttpClient $http) {
-        $http = HttpClientBuilder::buildDefault();
-
         $routes = Route::getAllRoutes();
 
         $helloExpectedContentType = Route::findProduces('GET', '/', 0)->getContentType()[0] ?? '';
@@ -103,5 +109,20 @@ class WebServerTest extends TestCase {
         $response4 = yield $http->request(new Request("http://127.0.0.1:8000/test", "GET"));
         $text2     = yield $response4->getBody()->buffer();
         $this->assertEquals("unauthorized", $text2);
+    }
+
+    private function testOpenAPI(HttpClient $http, OpenAPIService $api) {
+
+
+        /** @var Response $response */
+        $response = yield $http->request(new Request("http://127.0.0.1:8000/openapi", "GET"));
+        $text     = yield $response->getBody()->buffer();
+        $json     = \json_decode($text, true);
+        $this->assertNotEmpty($text);
+        $this->assertArrayHasKey('openapi', $json);
+        $this->assertArrayHasKey('info', $json);
+        $this->assertArrayHasKey('paths', $json);
+        $this->assertArrayHasKey('/{username}', $json['paths']);
+        $this->assertArrayHasKey('GET', $json['paths']['/{username}']);
     }
 }

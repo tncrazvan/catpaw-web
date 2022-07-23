@@ -6,18 +6,23 @@ use function Amp\call;
 use Amp\Promise;
 use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Utilities\AsciiTable;
+use CatPaw\Utilities\Container;
 use CatPaw\Utilities\Strings;
 use CatPaw\Web\Attributes\Consumes;
 use CatPaw\Web\Attributes\Param;
+use CatPaw\Web\Attributes\PathParam;
 use CatPaw\Web\Attributes\Produces;
 use CatPaw\Web\RouteHandlerContext;
+use CatPaw\Web\Services\OpenAPIService;
 use Closure;
 
 use Generator;
 use function implode;
 use ReflectionException;
 use ReflectionFunction;
+use ReflectionIntersectionType;
 use ReflectionMethod;
+use ReflectionParameter;
 use ReflectionType;
 use ReflectionUnionType;
 
@@ -282,7 +287,7 @@ class Route {
 
         $piecesLen = count($localPieces);
 
-        $resolver = function(string $requestedPath) use ($targets, $localPieces, $piecesLen) {
+        $resolver          = function(string $requestedPath) use ($targets, $localPieces, $piecesLen) {
             $variables     = [];
             $offset        = 0;
             $reconstructed = '';
@@ -364,9 +369,9 @@ class Route {
                     self::$consumes[$method][$path][$i] = yield Consumes::findByFunction($reflection);
                     self::$produces[$method][$path][$i] = yield Produces::findByFunction($reflection);
 
-                    $args = $reflection->getParameters();
+                    $parameters = $reflection->getParameters();
 
-                    self::$patterns[$method][$path][$i][] = yield from self::findPathPatterns($path, $args, $i);
+                    self::$patterns[$method][$path][$i][] = yield from self::findPathPatterns($path, $parameters, $i);
                     self::$routes[$method][$path][$i]     = $callback;
                     //TODO refactor this attributes section
                     $context = new class(method: $method, path: $path, isFilter: $isFilter, ) extends RouteHandlerContext {
@@ -386,11 +391,83 @@ class Route {
                             yield $ainstance->onRouteHandler($reflection, $callback, $context);
                         }
                     }
+
+                    if ($isFilter || \str_starts_with($path, '@')) {
+                        continue;
+                    }
+
+                    yield from self::registerClosureForOpenAPI($path, $method, $parameters);
                 }
             } catch (ReflectionException $e) {
-                die(Strings::red($e));
+                die(
+                    Strings::red(
+                        contents: \join(
+                            separator: "\n",
+                            array: [
+                                $e->getMessage(),
+                                $e->getTraceAsString(),
+                            ]
+                        )
+                    )
+                );
             }
         });
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param  array<ReflectionParameter> $parameters
+     * @return Generator
+     */
+    private static function registerClosureForOpenAPI(string $path, string $method, array $parameters) {
+        $apiParameters = [];
+        $responses     = [];
+
+        /** @var OpenAPIService */
+        $api = yield Container::create(OpenAPIService::class);
+        
+        foreach ($parameters as $parameter) {
+            if (!(yield PathParam::findByParameter($parameter)) && !(yield Param::findByParameter($parameter))) {
+                continue;
+            }
+            $type = $parameter->getType();
+            if ($type instanceof ReflectionUnionType || $type instanceof ReflectionIntersectionType) {
+                $types = $type->getTypes();
+                $type  = $types[0];
+                foreach ($types as $i => $t) {
+                    if ('null' !== $t && 'false' !== $t) {
+                        $type = $t;
+                        break;
+                    }
+                }
+            }
+
+            $apiParameters = [
+                ...$apiParameters,
+                ...$api->createParameter(
+                    name: $parameter->getName(),
+                    in: 'path',
+                    description: 'todo: description attribute',
+                    required: true,
+                    schema: $api->createSchema(type: $type->getName()),
+                    examples: [],
+                )
+            ];
+        }
+
+
+        $api->setPath(
+            path: $path,
+            pathContent: [
+                ...$api->createPathContent(
+                    method: $method,
+                    summary: 'todo: summary attribute',
+                    parameters: $apiParameters,
+                    responses: $responses,
+                )
+            ]
+        );
     }
 
     /**
