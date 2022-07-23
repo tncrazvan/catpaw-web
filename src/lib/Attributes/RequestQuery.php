@@ -53,7 +53,7 @@ class RequestQuery implements AttributeInterface {
             if ($result) {
                 $value = $result;
             } elseif (!$reflection->isOptional() && $reflection->allowsNull()) {
-                $value = null;
+                die(Strings::red("Handler \"$context->eventID\" specifies a request query string parameter that is not nullable. Any request query string parameter MUST be nullable.\n"));
             }
         });
     }

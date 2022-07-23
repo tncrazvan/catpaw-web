@@ -476,7 +476,7 @@ class Route {
                 $apiParameters = [
                     ...$apiParameters,
                     ...$api->createParameter(
-                        name: $query->getName(),
+                        name: $key,
                         in: 'query',
                         description: $summary?$summary->getValue():(new Summary(value:''))->getValue(),
                         required: false,
@@ -511,7 +511,7 @@ class Route {
                         name: $header->getKey(),
                         in: 'header',
                         description: $summary?$summary->getValue():(new Summary(value:''))->getValue(),
-                        required: true,
+                        required: false,
                         schema: $schema 
                                     ? $schema->getValue() 
                                     : $api->createSchema(type: $type->getName()),
