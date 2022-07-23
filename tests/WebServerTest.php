@@ -122,6 +122,6 @@ class WebServerTest extends TestCase {
         $this->assertArrayHasKey('info', $json);
         $this->assertArrayHasKey('paths', $json);
         $this->assertArrayHasKey('/{username}', $json['paths']);
-        $this->assertArrayHasKey('GET', $json['paths']['/{username}']);
+        $this->assertArrayHasKey('get', $json['paths']['/{username}']);
     }
 }
