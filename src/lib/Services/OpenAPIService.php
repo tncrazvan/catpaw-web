@@ -103,7 +103,7 @@ class OpenAPIService {
         string $description,
         string $contentType,
         array $schema,
-        array $example = []
+        array|string|int|float|bool $example = []
     ):array {
         $response = [
             "$status" => [

@@ -26,7 +26,7 @@ class ProducedResponse implements AttributeInterface {
         private int $status = 200,
         private array|string $schema = '',
         private string $description = '',
-        private array|string|int|float|bool|null $example = null,
+        private array|string|int|float|bool $example = [],
     ) {
     }
 
