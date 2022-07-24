@@ -446,7 +446,7 @@ class Route {
 
 
         $apiParameters = [];
-        $responses     = $produces?[...$unwrappedResponses]:[];
+        $responses     = $produces?$unwrappedResponses:[];
 
 
         /** @var OpenAPIService */

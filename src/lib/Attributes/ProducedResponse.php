@@ -46,10 +46,7 @@ class ProducedResponse implements AttributeInterface {
         if (1 === $len && isset($schema[0])) {
             return [
                 "type"  => "array",
-                "items" => [
-                    "type"       => "object",
-                    "properties" => $this->unwrap($api, $schema[0]),
-                ],
+                "items" => $this->unwrap($api, $schema[0]),
             ];
         }
 
