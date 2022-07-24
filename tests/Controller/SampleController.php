@@ -4,8 +4,8 @@ namespace Tests\Controller;
 use CatPaw\Web\Attributes\GET;
 use CatPaw\Web\Attributes\Param;
 use CatPaw\Web\Attributes\Path;
+use CatPaw\Web\Attributes\ProducedResponse;
 use CatPaw\Web\Attributes\Produces;
-use CatPaw\Web\Attributes\RequestQuery;
 use CatPaw\Web\Attributes\Summary;
 use CatPaw\Web\Services\OpenAPIService;
 
@@ -18,11 +18,24 @@ class SampleController {
     }
 
     #[GET]
+    #[Path("/object/{username}")]
+    #[Produces(new ProducedResponse('application/json'))]
+    public function helloObject(
+        #[Param] string $username,
+    ) {
+        return [
+            "username" => $username,
+            "created"  => time(),
+            "active"   => true
+        ];
+    }
+
+    #[GET]
     #[Path("/{username}")]
     #[Summary("Get information about an user")]
+    #[Produces("text/html")]
     public function helloUser(
         #[Param] string $username,
-        #[RequestQuery] ?string $token,
     ) {
         return "hello $username";
     }

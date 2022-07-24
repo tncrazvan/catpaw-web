@@ -101,19 +101,46 @@ class OpenAPIService {
     public function createResponse(
         int $status,
         string $description,
+        string $contentType,
+        array $schema,
     ):array {
         return [
             "$status" => [
-                "description" => $description
-            ]
+                "description" => $description,
+                "content"     => [
+                    "$contentType" => [
+                        "schema" => $schema,
+                    ],
+                ],
+            ],
         ];
     }
 
     public function createSchema(
-        string $type
+        string $type,
+        array|null $properties = null,
+    ):array {
+        if (null !== $properties) {
+            return [
+                "type"       => $type,
+                "properties" => $properties,
+            ];
+        }
+        return [
+            "type" => $type,
+        ];
+    }
+
+    public function createProperty(
+        string $name,
+        string $type,
+        string $description,
     ):array {
         return [
-            "type" => $type
+            "$name" => [
+                "type"        => $type,
+                "description" => $description,
+            ],
         ];
     }
 

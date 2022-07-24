@@ -17,7 +17,6 @@ use CatPaw\Web\Attributes\Produces;
 use CatPaw\Web\Attributes\RequestBody;
 use CatPaw\Web\Attributes\RequestHeader;
 use CatPaw\Web\Attributes\RequestQuery;
-use CatPaw\Web\Attributes\Schema;
 use CatPaw\Web\Attributes\Summary;
 use CatPaw\Web\RouteHandlerContext;
 use CatPaw\Web\Services\OpenAPIService;
@@ -431,8 +430,24 @@ class Route {
         string $method,
         array $parameters
     ) {
+        $unwrappedResponses = [];
+        
+        /** @var Produces|null */
+        $produces = yield Produces::findByFunction($reflection);
+        if ($produces) {
+            $producedResponses = $produces->getProducedResponses();
+            foreach ($producedResponses as $response) {
+                $unwrappedResponse = $response->getValue();
+                foreach ($unwrappedResponse as $status => $content) {
+                    $unwrappedResponses[$status] = $content;
+                }
+            }
+        }
+
+
         $apiParameters = [];
-        $responses     = [];
+        $responses     = $produces?[...$unwrappedResponses]:[];
+
 
         /** @var OpenAPIService */
         $api = yield Container::create(OpenAPIService::class);
@@ -446,8 +461,8 @@ class Route {
             /** @var Summary|null */
             $summary = (yield Summary::findByParameter($parameter));
 
-            /** @var Schema|null */
-            $schema = (yield Schema::findByParameter($parameter));
+            /** @var array{type:string} */
+            $schema = ["type" => ReflectionTypeManager::unwrap($parameter)->getName()];
             
             /** @var Example|null */
             $example = (yield Example::findByParameter($parameter));
@@ -480,9 +495,7 @@ class Route {
                         in: 'query',
                         description: $summary?$summary->getValue():(new Summary(value:''))->getValue(),
                         required: false,
-                        schema: $schema 
-                                    ? $schema->getValue() 
-                                    : $api->createSchema(type: $type->getName()),
+                        schema: $schema,
                         examples: $example?$example->getValue():[],
                     ),
                 ];
@@ -496,9 +509,7 @@ class Route {
                         in: 'path',
                         description: $summary?$summary->getValue():(new Summary(value:''))->getValue(),
                         required: true,
-                        schema: $schema 
-                                    ? $schema->getValue() 
-                                    : $api->createSchema(type: $type->getName()),
+                        schema: $schema,
                         examples: $example?$example->getValue():[],
                     ),
                 ];
@@ -512,9 +523,7 @@ class Route {
                         in: 'header',
                         description: $summary?$summary->getValue():(new Summary(value:''))->getValue(),
                         required: false,
-                        schema: $schema 
-                                    ? $schema->getValue() 
-                                    : $api->createSchema(type: $type->getName()),
+                        schema: $schema,
                         examples: $example?$example->getValue():[],
                     ),
                 ];
