@@ -26,7 +26,7 @@ class ProducedResponse implements AttributeInterface {
         private int $status = 200,
         private array|string $schema = '',
         private string $description = '',
-        private Example|null $example = null,
+        private array|string|int|float|bool|null $example = null,
     ) {
     }
 
@@ -95,17 +95,13 @@ class ProducedResponse implements AttributeInterface {
     #[Entry] public function setup(
         OpenAPIService $api
     ):void {
-        if ($this->example) {
-            $this->example->setup($api);
-        }
-
         $schema         = is_array($this->schema)?$this->unwrap($api, $this->schema):[ "type" => $this->schema ];
         $this->response = $api->createResponse(
             status:$this->status,
             description: $this->description,
             contentType: $this->type,
             schema: $schema,
-            example: $this->example?$this->example->getValue():[],
+            example: $this->example,
         );
     }
 }

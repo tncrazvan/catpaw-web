@@ -14,9 +14,8 @@ class Example implements AttributeInterface {
     private array $example = [];
 
     public function __construct(
-        private string $title,
-        private Summary|string $summary,
         private array|string|int|float|bool $value,
+        private Summary|string $summary = '',
     ) {
     }
 
@@ -28,7 +27,6 @@ class Example implements AttributeInterface {
         OpenAPIService $api
     ):void {
         $this->example = $api->createExample(
-            title:$this->title,
             summary:\is_string($this->summary)?$this->summary:$this->summary->getValue(),
             value:$this->value,
         );
