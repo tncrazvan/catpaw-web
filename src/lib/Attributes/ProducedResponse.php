@@ -44,7 +44,7 @@ class ProducedResponse implements AttributeInterface {
     private function unwrap(OpenAPIService $api, array $schema):array {
         $properties = [];
         $len        = count($schema);
-        if (1 === $len && isset($schema)) {
+        if (1 === $len && isset($schema[0])) {
             return [
                 "type"  => "array",
                 "items" => $this->unwrap($api, $schema[0]),
