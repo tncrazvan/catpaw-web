@@ -43,7 +43,7 @@ class ProducedResponse implements AttributeInterface {
     private function unwrap(OpenAPIService $api, array $schema):array {
         $properties = [];
         $len        = count($schema);
-        if (1 === $len && isset($schema[0])) {
+        if (1 === $len && isset($schema)) {
             return [
                 "type"  => "array",
                 "items" => $this->unwrap($api, $schema[0]),
@@ -55,15 +55,19 @@ class ProducedResponse implements AttributeInterface {
                 if (count($type) === 0) {
                     continue;
                 }
+
+                if (!isset($type[0])) {
+                    $localProperties  = $this->unwrap($api, $type);
+                    $properties[$key] = $localProperties;
+                    continue;
+                }
+
                 $type = $type[0];
 
                 if (\is_array($type)) {
                     $properties[$key] = [
                         "type"  => "array",
-                        "items" => [
-                            "type"       => "object",
-                            "properties" => $this->unwrap($api, $type),
-                        ],
+                        "items" => $this->unwrap($api, $type),
                     ];
                 } else {
                     $type             = \explode("\\", $type);
