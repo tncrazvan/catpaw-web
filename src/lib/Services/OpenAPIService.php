@@ -103,32 +103,41 @@ class OpenAPIService {
         string $description,
         string $contentType,
         array $schema,
+        array $example = []
     ):array {
-        return [
+        $response = [
             "$status" => [
                 "description" => $description,
                 "content"     => [
                     "$contentType" => [
-                        "schema" => $schema,
+                        "schema"  => $schema,
+                        "example" => $example,
                     ],
                 ],
             ],
         ];
+
+        if (\count($example) === 0) {
+            unset($response[$status]["content"][$contentType]["example"]);
+        }
+
+        return $response;
     }
 
     public function createSchema(
         string $type,
-        array|null $properties = null,
+        array $properties = [],
     ):array {
-        if (null !== $properties) {
-            return [
-                "type"       => $type,
-                "properties" => $properties,
-            ];
-        }
-        return [
-            "type" => $type,
+        $schema = [
+            "type"       => $type,
+            "properties" => $properties,
         ];
+
+        if (\count($properties) === 0) {
+            unset($schema["properties"]);
+        }
+
+        return $schema;
     }
 
     public function createProperty(
@@ -146,14 +155,20 @@ class OpenAPIService {
 
     public function createExample(
         string $title,
-        string $summary,
         array|string|int|float|bool $value,
+        string $summary = '',
     ):array {
-        return [
+        $example = [
             "$title" => [
                 "summary" => $summary,
                 "value"   => $value,
             ],
         ];
+
+        if ('' === $summary) {
+            unset($example[$title]["summary"]);
+        }
+
+        return $example;
     }
 }

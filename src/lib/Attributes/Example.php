@@ -15,7 +15,7 @@ class Example implements AttributeInterface {
 
     public function __construct(
         private string $title,
-        private Summary $summary,
+        private Summary|string $summary,
         private array|string|int|float|bool $value,
     ) {
     }
@@ -29,7 +29,7 @@ class Example implements AttributeInterface {
     ):void {
         $this->example = $api->createExample(
             title:$this->title,
-            summary:$this->summary->getValue(),
+            summary:\is_string($this->summary)?$this->summary:$this->summary->getValue(),
             value:$this->value,
         );
     }
