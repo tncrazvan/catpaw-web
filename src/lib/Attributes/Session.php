@@ -12,14 +12,6 @@ use CatPaw\Web\HttpContext;
 use CatPaw\Web\Session\SessionOperationsInterface;
 use ReflectionParameter;
 
-/**
- * Attach this to a parameter.
- *
- * Catpaw will provide and start (if not already
- * started) the session of the current user.
- *
- * This parameter <b>MUST</b> be of type "array" and it must be a pointer.
- */
 #[Attribute]
 class Session implements AttributeInterface {
     use CoreAttributeDefinition;

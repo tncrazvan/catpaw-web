@@ -27,7 +27,7 @@ interface SessionOperationsInterface {
 
     /**
      * Save a session in memory.<br/>
-     * The difference "persist" and "set" is that
+     * The difference between "persist" and "set" is that
      * the "persist" method will save data on a permanent storage
      * like a database or even directly to the file system.
      * @param  Session       $session
