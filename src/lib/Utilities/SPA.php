@@ -2,20 +2,15 @@
 
 namespace CatPaw\Web\Utilities;
 
-use CatPaw\Web\Attributes\Consumes;
 use CatPaw\Web\Attributes\GET;
 use CatPaw\Web\Attributes\Path;
 use CatPaw\Web\Attributes\Produces;
-use CatPaw\Web\Attributes\PUT;
 
-use CatPaw\Web\Attributes\RequestBody;
 use CatPaw\Web\Attributes\Session;
 use CatPaw\Web\Attributes\SessionID;
 use function CatPaw\Web\lazy;
-use DomainException;
 
 use ReflectionClass;
-use stdClass;
 
 abstract class SPA {
     private string $SPAPath = '';
@@ -23,16 +18,6 @@ abstract class SPA {
     protected array $state  = [];
     protected bool $updated = false;
     
-    /**
-     * Set the SPA state
-     *
-     * @param  array $state new state
-     * @return void
-     */
-    private function setState(array $state, array &$session): void {
-        $this->state   = $state;
-        $this->updated = true;
-    }
     /**
      * get the SPA state
      *
@@ -63,7 +48,7 @@ abstract class SPA {
     #[Produces("application/json")]
     public function get(
         #[Session] array &$session,
-        #[SessionID] ?string $sessionID
+        #[SessionID] string $sessionID
     ) {
         if (!$this->initialized) {
             /** @var Path */
@@ -72,22 +57,14 @@ abstract class SPA {
             $this->initialized = true;
         }
 
-        $state = $this->getState(fn(string $id) => "$this->SPAPath:lazy:$sessionID:$id", $session);
+        $key = "$this->SPAPath:lazy:$sessionID";
 
-        if ($state && !$this->isAssoc($state)) {
-            throw new DomainException("All SPA states must be associative arrays.");
+        if (isset($this->paths[$key])) {
+            return $this->paths[$key];
         }
 
-        return !$state? new stdClass():$state;
-    }
+        $this->paths[$key] = lazy(fn(string $id) => "$key:$id", $session, $this->state);
 
-    #[PUT]
-    #[Path(":state")]
-    #[Consumes("application/json")]
-    public function put(
-        #[RequestBody] array $state,
-        #[Session] array &$session,
-    ) {
-        $this->setState($state, $session);
+        return $this->paths[$key];
     }
 }
