@@ -209,24 +209,11 @@ function cached(HttpConfiguration $config, Response $response): Response {
  * @return Lazy
  */
 function lazyValue(string $path, mixed &$value):Lazy {
-    global $lazyStates;
-    if (!$lazyStates) {
-        $lazyStates = [];
-    }
-    if (isset($lazyStates[$path])) {
-        return $lazyStates[$path];
-    }
-    
     $entry = new Lazy(
-        path: $path,
+        id: $path,
         value: $value,
     );
-
     $entry->publish();
-
-    
-    $lazyStates[$path] = $entry;
-
     return $entry;
 }
 

@@ -44,7 +44,7 @@ abstract class SPA {
             return $this->paths[$key];
         }
 
-        $this->paths[$key] = lazy(fn(string $id) => "$key:$id", $session, $this->state);
+        $this->paths[$key] = lazy(fn(string $id) => "$sessionID:$id", $session, $this->state);
 
         return $this->paths[$key];
     }
