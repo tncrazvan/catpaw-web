@@ -201,11 +201,11 @@ function cached(HttpConfiguration $config, Response $response): Response {
  * Undocumented function
  *
  * @param  string $path    http path of the property
- * @param  mixed  $value
+ * @param  mixed  &$value
  * @param  mixed  $cascade whenever the lazy state is updated through http, this pointer will also be updated.
  * @return Lazy
  */
-function lazyValue(string $path, mixed $value):Lazy {
+function lazyValue(string $path, mixed &$value):Lazy {
     global $lazyStates;
     if (!$lazyStates) {
         $lazyStates = [];
@@ -234,14 +234,12 @@ function lazy(callable $path, array &$bind, array $value):array {
 
     foreach ($value as $key => $value) {
         if (\is_string($value) || \is_numeric($value) || \is_bool($value)) {
-            $value = lazyValue($path($key), $value);
-            if ($bind) {
-                if (!isset($bind[$key])) {
-                    $bind[$key] = $value;
-                }
-                $value->bind($bind[$key]);
+            if (!isset($bind[$key])) {
+                $bind[$key] = $value;
             }
-            $state[$key] = $value->build();
+            $lazyValue = lazyValue($path($key), $bind[$key]);
+            $lazyValue->bind($bind[$key]);
+            $state[$key] = $lazyValue->build();
             continue;
         }
         if (!isset($bind[$key])) {
