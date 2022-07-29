@@ -3,6 +3,8 @@
 namespace CatPaw\Web\Utilities;
 
 use CatPaw\Web\Attributes\Consumes;
+use CatPaw\Web\Attributes\IgnoreDescribe;
+use CatPaw\Web\Attributes\IgnoreOpenAPI;
 use CatPaw\Web\Attributes\Produces;
 use CatPaw\Web\Attributes\RequestBody;
 use Closure;
@@ -22,17 +24,31 @@ class Lazy {
             return $this;
         }
         $this->published = true;
-        Route::get($this->path, #[Produces("application/json")] function() {
-            return [ '!lazy' => $this->value ];
-        });
-        Route::put($this->path, #[Consumes("application/json")] function(
-            #[RequestBody] array $payload
-        ) {
-            $this->value = $payload['!lazy'];
-            if ($this->onUpdate ?? false) {
-                ($this->onUpdate)($this->value);
+        Route::get(
+            path: $this->path,
+            callback: 
+            #[IgnoreOpenAPI]
+            #[IgnoreDescribe]
+            #[Produces("application/json")]
+            function() {
+                return [ '!lazy' => $this->value ];
             }
-        });
+        );
+        Route::put(
+            path: $this->path,
+            callback: 
+            #[IgnoreOpenAPI] 
+            #[IgnoreDescribe] 
+            #[Consumes("application/json")] 
+            function(
+                #[RequestBody] array $payload
+            ) {
+                $this->value = $payload['!lazy'];
+                if ($this->onUpdate ?? false) {
+                    ($this->onUpdate)($this->value);
+                }
+            }
+        );
         return $this;
     }
 

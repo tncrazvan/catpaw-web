@@ -1,5 +1,4 @@
 <?php
-
 namespace CatPaw\Web\Attributes;
 
 use Attribute;
@@ -8,26 +7,18 @@ use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Attributes\Traits\CoreAttributeDefinition;
 use CatPaw\Web\Services\OpenAPIService;
 
-/**
- * Attatch to a function or method.
- *
- * This tell catpaw what type of content it produces.<br/>
- * Example of possible values:
- * - text/plain
- * - application/json
- */
 #[Attribute]
 class Produces implements AttributeInterface {
     use CoreAttributeDefinition;
 
-    private array $contentType;
-    private array $responses;
+    private array $contentType = [];
+    private array $responses   = [];
     private array $productions;
 
     /**
-     * @param Response|string ...$productions http content type consumed as strings or 
-     *                                        the whole shape of available responses as Response objects.
-     *                                        Mixing both strings and Responses is allowed.
+     * @param ProducedResponse|string ...$productions http content type consumed as strings or 
+     *                                                the whole shape of available responses as Response objects.
+     *                                                Mixing both strings and Responses is allowed.
      */
     public function __construct(
         ProducedResponse|string ...$productions,
@@ -35,7 +26,7 @@ class Produces implements AttributeInterface {
         $this->productions = $productions;
     }
 
-    #[Entry] public function setup(OpenAPIService $api) {
+    #[Entry] public function setup(OpenAPIService $api):void {
         $this->contentType = [];
         $this->responses   = [];
 

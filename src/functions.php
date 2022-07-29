@@ -225,7 +225,6 @@ function lazyValue(string $path, mixed &$value):Lazy {
     $entry->publish();
 
     
-
     $lazyStates[$path] = $entry;
 
     return $entry;

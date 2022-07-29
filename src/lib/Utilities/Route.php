@@ -11,6 +11,8 @@ use CatPaw\Utilities\ReflectionTypeManager;
 use CatPaw\Utilities\Strings;
 use CatPaw\Web\Attributes\Consumes;
 use CatPaw\Web\Attributes\Example;
+use CatPaw\Web\Attributes\IgnoreDescribe;
+use CatPaw\Web\Attributes\IgnoreOpenAPI;
 use CatPaw\Web\Attributes\Param;
 use CatPaw\Web\Attributes\PathParam;
 use CatPaw\Web\Attributes\Produces;
@@ -32,11 +34,12 @@ use ReflectionParameter;
 use ReflectionUnionType;
 
 class Route {
-    private static array $routes      = [];
-    private static array $reflections = [];
-    private static array $consumes    = [];
-    private static array $produces    = [];
-    private static array $patterns    = [];
+    private static array $routes         = [];
+    private static array $reflections    = [];
+    private static array $consumes       = [];
+    private static array $produces       = [];
+    private static array $patterns       = [];
+    private static array $ignoreDescribe = [];
 
     /**
      * Find a route.
@@ -199,7 +202,7 @@ class Route {
         $table->add("Method", "Path");
         foreach (self::$routes as $method => $paths) {
             foreach ($paths as $path => $callback) {
-                if (!str_starts_with($path, '@')) {
+                if (!str_starts_with($path, '@') && !isset(self::$ignoreDescribe[$method][$path])) {
                     $table->add($method, $path);
                 }
             }
@@ -400,7 +403,23 @@ class Route {
                         continue;
                     }
 
-                    yield from self::registerClosureForOpenAPI($reflection, $path, $method, $parameters);
+
+                    /** @var IgnoreOpenAPI|null */
+                    $ignoreOpenAPI = yield IgnoreOpenAPI::findByFunction($reflection);
+                    /** @var IgnoreDescribe|null */
+                    $ignoreDescribe = yield IgnoreDescribe::findByFunction($reflection);
+
+                    if ($ignoreDescribe) {
+                        if (!isset(self::$ignoreDescribe[$method])) {
+                            self::$ignoreDescribe[$method] = [];
+                        }
+                            
+                        self::$ignoreDescribe[$method][$path] = true;
+                    }
+
+                    if (!$ignoreOpenAPI) {
+                        yield from self::registerClosureForOpenAPI($reflection, $path, $method, $parameters);
+                    }
                 }
             } catch (ReflectionException $e) {
                 die(
@@ -431,7 +450,7 @@ class Route {
         array $parameters
     ) {
         $unwrappedResponses = [];
-        
+
         /** @var Produces|null */
         $produces = yield Produces::findByFunction($reflection);
         if ($produces) {
@@ -443,7 +462,6 @@ class Route {
                 }
             }
         }
-
 
         $apiParameters = [];
         $responses     = $produces?$unwrappedResponses:[];
@@ -532,7 +550,7 @@ class Route {
 
         /** @var Summary */
         $summary = (yield Summary::findByFunction($reflection)) ?? new Summary('');
-
+        
         $api->setPath(
             path: $path,
             pathContent: [
