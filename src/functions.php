@@ -86,6 +86,7 @@ function notfound(HttpConfiguration $config): Closure {
     ) use ($config, $MARKDOWN, $HTML, $OTHER) {
         $path     = urldecode($request->getUri()->getPath());
         $filename = $config->httpWebroot.$path;
+        
         if (yield isDirectory($filename)) {
             if (!str_ends_with($filename, '/')) {
                 return new Response(Status::MOVED_PERMANENTLY, [
@@ -99,6 +100,7 @@ function notfound(HttpConfiguration $config): Closure {
                 $filename .= 'index.html';
             }
         }
+
 
         $lowered = strtolower($filename);
 
