@@ -73,6 +73,7 @@ function markdown(HttpConfiguration $config, string $filename): Promise {
 }
 
 
+
 function notfound(HttpConfiguration $config): Closure {
     $MARKDOWN = 0;
     $HTML     = 1;
