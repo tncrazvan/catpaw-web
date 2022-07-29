@@ -29,24 +29,24 @@ class Lazy {
             #[RequestBody] array $payload
         ) {
             $this->value = $payload['!lazy'];
-            if ($this->onUpdate) {
+            if ($this->onUpdate ?? false) {
                 ($this->onUpdate)($this->value);
             }
         });
         return $this;
     }
 
-    public function push(&$cascade):static {
-        if (null !== $this->lastCascade && $this->lastCascade === $cascade) {
+    public function bind(&$target):static {
+        if (null !== $this->lastCascade && $this->lastCascade === $target) {
             return $this;
         }
 
-        if ($cascade) {
-            $this->value = $cascade;
+        if ($target) {
+            $this->value = $target;
         }
 
-        $this->onUpdate = function($value) use (&$cascade) {
-            $cascade    = $value;
+        $this->onUpdate = function($value) use (&$target) {
+            $target     = $value;
         };
         return $this;
     }

@@ -34,39 +34,39 @@ use ReflectionParameter;
 class RequestBody implements AttributeInterface {
     use CoreAttributeDefinition;
 
-    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $context): Promise {
+    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
         /** @var false|HttpContext $http */
         return new LazyPromise(function() use (
             $reflection,
             &$value,
-            $context
+            $http
         ) {
             $className = $reflection->getType()->getName() ?? '';
             $value     = match ($className) {
                 "array" => $this->toArray(
-                    body       : yield $context->request->getBody()->buffer(),
-                    contentType: $context->request->getHeader("Content-Type") ?? '',
+                    body       : yield $http->request->getBody()->buffer(),
+                    contentType: $http->request->getHeader("Content-Type") ?? '',
                 ),
 
-                "string" => yield $context->request->getBody()->buffer(),
+                "string" => yield $http->request->getBody()->buffer(),
 
                 "int" => $this->toInteger(
-                    body: yield $context->request->getBody()->buffer(),
+                    body: yield $http->request->getBody()->buffer(),
                 ),
 
                 "float" => $this->toFloat(
-                    body: yield $context->request->getBody()->buffer(),
+                    body: yield $http->request->getBody()->buffer(),
                 ),
 
-                \Amp\Http\Server\RequestBody::class => yield $context->request->getBody(),
+                \Amp\Http\Server\RequestBody::class => yield $http->request->getBody(),
 
                 IteratorStream::class => $this->toIteratorStream(
-                    body: yield $context->request->getBody(),
+                    body: yield $http->request->getBody(),
                 ),
 
                 default => $this->toObject(
-                    body       : yield $context->request->getBody()->buffer(),
-                    contentType: $context->request->getHeader("Content-Type") ?? '',
+                    body       : yield $http->request->getBody()->buffer(),
+                    contentType: $http->request->getHeader("Content-Type") ?? '',
                     className  : $className
                 ),
             };

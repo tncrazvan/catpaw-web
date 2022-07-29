@@ -3,7 +3,6 @@
 namespace CatPaw\Web\Services;
 
 use Amp\ByteStream\IteratorStream;
-use function Amp\call;
 use Amp\Http\InvalidHeaderException;
 use Amp\Http\Server\Response;
 use Amp\Http\Status;
@@ -12,8 +11,9 @@ use CatPaw\Attributes\Service;
 use CatPaw\Utilities\Strings;
 use CatPaw\Web\Exceptions\InvalidByteRangeQueryException;
 use CatPaw\Web\Interfaces\ByteRangeWriterInterface;
-
 use SplFixedArray;
+
+use function Amp\call;
 
 #[Service]
 class ByteRangeService {
@@ -92,7 +92,7 @@ class ByteRangeService {
                             }
 
                             yield call($writer->start(...));
-                            yield call($writer->data(...), $emit, $start, $end - $start + 1);
+                            yield call($writer->data(...),$emit, $start, $end - $start + 1);
                             yield call($writer->end(...));
                         }
                     )

@@ -2,7 +2,6 @@
 
 namespace CatPaw\Web\Utilities;
 
-use CatPaw\Attributes\Entry;
 use CatPaw\Web\Attributes\Consumes;
 use CatPaw\Web\Attributes\GET;
 use CatPaw\Web\Attributes\Path;
@@ -12,36 +11,37 @@ use CatPaw\Web\Attributes\PUT;
 use CatPaw\Web\Attributes\RequestBody;
 use CatPaw\Web\Attributes\Session;
 use CatPaw\Web\Attributes\SessionID;
+use function CatPaw\Web\lazy;
 use DomainException;
-use Generator;
+
 use ReflectionClass;
+use stdClass;
 
 abstract class SPA {
     private string $SPAPath = '';
-
-    #[Entry] public function setup():Generator {
-        /** @var Path */
-        $path          = yield Path::findByClass(new ReflectionClass(static::class));
-        $this->SPAPath = $path->getValue();
-    }
-
+    
+    protected array $state  = [];
+    protected bool $updated = false;
+    
     /**
      * Set the SPA state
      *
-     * @param  array $state   new state
-     * @param  array $session user session
+     * @param  array $state new state
      * @return void
      */
-    protected abstract function setState(array $state, array &$session):void;
-
+    private function setState(array $state, array &$session): void {
+        $this->state   = $state;
+        $this->updated = true;
+    }
     /**
      * get the SPA state
      *
      * @param  callable(string $value):string $path  takes a string as a parameter and returns an unique path for your lazy property
-     * @param  array $session user session
      * @return array
      */
-    protected abstract function getState(callable $path, array &$session):array;
+    private function getState(callable $path, array &$session): array {
+        return $this->updated?$this->state:lazy($path, $session, $this->state);
+    }
 
     /**
      * See credits.
@@ -56,20 +56,29 @@ abstract class SPA {
         return array_keys($arr) !== range(0, count($arr) - 1);
     }
 
+    private bool $initialized = false;
+
     #[GET]
     #[Path(":state")]
     #[Produces("application/json")]
     public function get(
         #[Session] array &$session,
         #[SessionID] ?string $sessionID
-    ):array {
+    ) {
+        if (!$this->initialized) {
+            /** @var Path */
+            $path              = yield Path::findByClass(new ReflectionClass(static::class));
+            $this->SPAPath     = $path->getValue();
+            $this->initialized = true;
+        }
+
         $state = $this->getState(fn(string $id) => "$this->SPAPath:lazy:$sessionID:$id", $session);
 
-        if (!$this->isAssoc($state)) {
+        if ($state && !$this->isAssoc($state)) {
             throw new DomainException("All SPA states must be associative arrays.");
         }
 
-        return $state;
+        return !$state? new stdClass():$state;
     }
 
     #[PUT]

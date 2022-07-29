@@ -87,9 +87,7 @@ function notfound(HttpConfiguration $config): Closure {
         $filename = $config->httpWebroot.$path;
         if (yield isDirectory($filename)) {
             if (!str_ends_with($filename, '/')) {
-                return new Response(Status::MOVED_PERMANENTLY, [
-                    "Location" => "$path/"
-                ]);
+                $filename .= '/';
             }
 
             if (yield exists("{$filename}index.md")) {
@@ -205,8 +203,11 @@ function cached(HttpConfiguration $config, Response $response): Response {
  * @param  mixed  $cascade whenever the lazy state is updated through http, this pointer will also be updated.
  * @return Lazy
  */
-function lazy(string $path, mixed $value):Lazy {
+function lazyValue(string $path, mixed $value):Lazy {
     global $lazyStates;
+    if (!$lazyStates) {
+        $lazyStates = [];
+    }
     if (isset($lazyStates[$path])) {
         return $lazyStates[$path];
     }
@@ -218,11 +219,34 @@ function lazy(string $path, mixed $value):Lazy {
 
     $entry->publish();
 
-    if (!$lazyStates) {
-        $lazyStates = [];
-    }
+    
 
     $lazyStates[$path] = $entry;
 
     return $entry;
+}
+
+
+function lazy(callable $path, array &$bind, array $value):array {
+    $state = [];
+
+    foreach ($value as $key => $value) {
+        if (\is_string($value) || \is_numeric($value) || \is_bool($value)) {
+            $value = lazyValue($path($key), $value);
+            if ($bind) {
+                if (!isset($bind[$key])) {
+                    $bind[$key] = $value;
+                }
+                $value->bind($bind[$key]);
+            }
+            $state[$key] = $value->build();
+            continue;
+        }
+        if (!isset($bind[$key])) {
+            $bind[$key] = [];
+        }
+        $state[$key] = lazy(fn($key2) => $path("$key:$key2"), $bind[$key], $value);
+    }
+
+    return $state;
 }

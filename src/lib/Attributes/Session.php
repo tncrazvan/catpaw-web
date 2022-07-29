@@ -12,6 +12,14 @@ use CatPaw\Web\HttpContext;
 use CatPaw\Web\Session\SessionOperationsInterface;
 use ReflectionParameter;
 
+/**
+ * Attach this to a parameter.
+ *
+ * Catpaw will provide and start (if not already
+ * started) the session of the current user.
+ *
+ * This parameter <b>MUST</b> be of type "array" and it must be a pointer.
+ */
 #[Attribute]
 class Session implements AttributeInterface {
     use CoreAttributeDefinition;
@@ -75,25 +83,25 @@ class Session implements AttributeInterface {
     }
 
 
-    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $context): Promise {
+    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
         /** @var false|HttpContext $http */
         return new LazyPromise(function() use (
             $reflection,
             &$value,
-            $context
+            $http
         ) {
-            if (!$context) {
+            if (!$http) {
                 return;
             }
             /** @var Session $session */
-            $sessionIDCookie = $context->request->getCookie("session-id") ?? false;
+            $sessionIDCookie = $http->request->getCookie("session-id") ?? false;
             $sessionID       = $sessionIDCookie ? $sessionIDCookie->getValue() : '';
-            $session         = yield $context->sessionOperations->validateSession(id: $sessionID);
+            $session         = yield $http->sessionOperations->validateSession(id: $sessionID);
             if (!$session) {
-                $session = yield $context->sessionOperations->startSession($sessionID);
+                $session = yield $http->sessionOperations->startSession($sessionID);
             }
             if ($session->getId() !== $sessionID) {
-                $context->response->setCookie(new ResponseCookie("session-id", $session->getId()));
+                $http->response->setCookie(new ResponseCookie("session-id", $session->getId()));
             }
 
             $value = $session;

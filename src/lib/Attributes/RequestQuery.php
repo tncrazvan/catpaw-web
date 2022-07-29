@@ -7,11 +7,12 @@ use Amp\Promise;
 use Attribute;
 use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Attributes\Traits\CoreAttributeDefinition;
-use CatPaw\Utilities\ReflectionTypeManager;
 use CatPaw\Utilities\Strings;
 use CatPaw\Web\HttpContext;
 use Exception;
 use ReflectionParameter;
+use ReflectionType;
+use ReflectionUnionType;
 
 #[Attribute]
 class RequestQuery implements AttributeInterface {
@@ -30,30 +31,33 @@ class RequestQuery implements AttributeInterface {
         return $this->name;
     }
 
-    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $context): Promise {
-        /** @var HttpContext $context */
+    public function onParameter(ReflectionParameter $reflection, mixed &$value, mixed $http): Promise {
+        /** @var false|HttpContext $http */
         return new LazyPromise(function() use (
             $reflection,
             &$value,
-            $context
+            $http
         ) {
-            $type = ReflectionTypeManager::unwrap($reflection);
-            $key  = '' === $this->name?$reflection->getName():$this->name;
-            if (!$type) {
-                die(Strings::red("Handler \"$context->eventID\" must specify at least 1 type for query \"$key\".\n"));
+            $type = $reflection->getType();
+
+            if ($type instanceof ReflectionUnionType) {
+                $typeName = $type->getTypes()[0]->getName();
+            } elseif ($type instanceof ReflectionType) {
+                $typeName = $type->getName();
+            } else {
+                die(Strings::red("Handler \"$http->eventID\" must specify at least 1 type for query \"$this->name\".\n"));
             }
-            $typeName = $type->getName();
 
             $result = match ($typeName) {
-                "string" => $this->toString($context, $key),
-                "int"    => $this->toInteger($context, $key),
-                "float"  => $this->toFloat($context, $key),
-                "bool"   => $this->toBool($context, $key),
+                "string" => $this->toString($http),
+                "int"    => $this->toInteger($http),
+                "float"  => $this->toFloat($http),
+                "bool"   => $this->toBool($http),
             };
             if ($result) {
                 $value = $result;
-            } elseif (!$reflection->allowsNull()) {
-                die(Strings::red("Handler \"$context->eventID\" specifies a request query string parameter that is not nullable. Any request query string parameter MUST be nullable.\n"));
+            } elseif (!$reflection->isOptional() && $reflection->allowsNull()) {
+                $value = null;
             }
         });
     }
@@ -62,9 +66,9 @@ class RequestQuery implements AttributeInterface {
      * @param  HttpContext  $http
      * @return false|string
      */
-    public function toString(HttpContext $http, string $key): false|string {
-        if (isset($http->query[$key])) {
-            return urldecode($http->query[$key]);
+    public function toString(HttpContext $http): false|string {
+        if (isset($http->query[$this->name])) {
+            return urldecode($http->query[$this->name]);
         }
         return false;
     }
@@ -75,13 +79,13 @@ class RequestQuery implements AttributeInterface {
      * @throws Exception
      * @return false|int
      */
-    private function toInteger(HttpContext $http, string $key): false|int {
-        if (isset($http->query[$key])) {
-            $value = urldecode($http->query[$key]);
+    private function toInteger(HttpContext $http): false|int {
+        if (isset($http->query[$this->name])) {
+            $value = urldecode($http->query[$this->name]);
             if (is_numeric($value)) {
                 return (int)$value;
             } else {
-                throw new Exception("RequestQuery $key was expected to be numeric, but non numeric value has been provided instead:$value");
+                throw new Exception("RequestQuery $this->name was expected to be numeric, but non numeric value has been provided instead:$value");
             }
         }
         return false;
@@ -92,9 +96,9 @@ class RequestQuery implements AttributeInterface {
      * @param  HttpContext $http
      * @return bool
      */
-    private function toBool(HttpContext $http, string $key): bool {
-        if (isset($http->query[$key])) {
-            return filter_var(urldecode($http->query[$key]), FILTER_VALIDATE_BOOLEAN);
+    private function toBool(HttpContext $http): bool {
+        if (isset($http->query[$this->name])) {
+            return filter_var(urldecode($http->query[$this->name]), FILTER_VALIDATE_BOOLEAN);
         }
         return false;
     }
@@ -104,13 +108,13 @@ class RequestQuery implements AttributeInterface {
      * @throws Exception
      * @return false|float
      */
-    private function toFloat(HttpContext $http, string $key): false|float {
-        if (isset($http->query[$key])) {
-            $value = urldecode($http->query[$key]);
+    private function toFloat(HttpContext $http): false|float {
+        if (isset($http->query[$this->name])) {
+            $value = urldecode($http->query[$this->name]);
             if (is_numeric($value)) {
                 return (float)$value;
             } else {
-                throw new Exception("RequestQuery $key was expected to be numeric, but non numeric value has been provided instead:$value");
+                throw new Exception("RequestQuery $this->name was expected to be numeric, but non numeric value has been provided instead:$value");
             }
         }
         return false;
