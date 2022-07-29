@@ -6,11 +6,20 @@ use function Amp\call;
 use Amp\Promise;
 use CatPaw\Attributes\Interfaces\AttributeInterface;
 use CatPaw\Utilities\AsciiTable;
+use CatPaw\Utilities\Container;
+use CatPaw\Utilities\ReflectionTypeManager;
 use CatPaw\Utilities\Strings;
 use CatPaw\Web\Attributes\Consumes;
+use CatPaw\Web\Attributes\Example;
 use CatPaw\Web\Attributes\Param;
+use CatPaw\Web\Attributes\PathParam;
 use CatPaw\Web\Attributes\Produces;
+use CatPaw\Web\Attributes\RequestBody;
+use CatPaw\Web\Attributes\RequestHeader;
+use CatPaw\Web\Attributes\RequestQuery;
+use CatPaw\Web\Attributes\Summary;
 use CatPaw\Web\RouteHandlerContext;
+use CatPaw\Web\Services\OpenAPIService;
 use Closure;
 
 use Generator;
@@ -18,7 +27,8 @@ use function implode;
 use ReflectionException;
 use ReflectionFunction;
 use ReflectionMethod;
-use ReflectionType;
+use ReflectionNamedType;
+use ReflectionParameter;
 use ReflectionUnionType;
 
 class Route {
@@ -219,16 +229,15 @@ class Route {
             'rawNames'   => [],
         ];
         foreach ($params as $param) {
-            /** @var Param $pathParam */
+            /** @var Param|null $pathParam */
             $pathParam = yield Param::findByParameter($param);
             if ($pathParam) {
-                $optional = $param->isOptional();
                 $typeName = 'string';
 
                 $type = $param->getType();
                 if ($type instanceof ReflectionUnionType) {
                     $typeName = $type->getTypes()[0]->getName();
-                } elseif ($type instanceof ReflectionType) {
+                } elseif ($type instanceof ReflectionNamedType) {
                     $typeName = $type->getName();
                 }
 
@@ -282,7 +291,7 @@ class Route {
 
         $piecesLen = count($localPieces);
 
-        $resolver = function(string $requestedPath) use ($targets, $localPieces, $piecesLen) {
+        $resolver          = function(string $requestedPath) use ($targets, $localPieces, $piecesLen) {
             $variables     = [];
             $offset        = 0;
             $reconstructed = '';
@@ -364,9 +373,9 @@ class Route {
                     self::$consumes[$method][$path][$i] = yield Consumes::findByFunction($reflection);
                     self::$produces[$method][$path][$i] = yield Produces::findByFunction($reflection);
 
-                    $args = $reflection->getParameters();
+                    $parameters = $reflection->getParameters();
 
-                    self::$patterns[$method][$path][$i][] = yield from self::findPathPatterns($path, $args, $i);
+                    self::$patterns[$method][$path][$i][] = yield from self::findPathPatterns($path, $parameters, $i);
                     self::$routes[$method][$path][$i]     = $callback;
                     //TODO refactor this attributes section
                     $context = new class(method: $method, path: $path, isFilter: $isFilter, ) extends RouteHandlerContext {
@@ -386,11 +395,156 @@ class Route {
                             yield $ainstance->onRouteHandler($reflection, $callback, $context);
                         }
                     }
+
+                    if ($isFilter || \str_starts_with($path, '@')) {
+                        continue;
+                    }
+
+                    yield from self::registerClosureForOpenAPI($reflection, $path, $method, $parameters);
                 }
             } catch (ReflectionException $e) {
-                die(Strings::red($e));
+                die(
+                    Strings::red(
+                        contents: \join(
+                            separator: "\n",
+                            array: [
+                                $e->getMessage(),
+                                $e->getTraceAsString(),
+                            ],
+                        ),
+                    )
+                );
             }
         });
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param  array<ReflectionParameter> $parameters
+     * @return Generator
+     */
+    private static function registerClosureForOpenAPI(
+        ReflectionFunction $reflection,
+        string $path,
+        string $method,
+        array $parameters
+    ) {
+        $unwrappedResponses = [];
+        
+        /** @var Produces|null */
+        $produces = yield Produces::findByFunction($reflection);
+        if ($produces) {
+            $producedResponses = $produces->getProducedResponses();
+            foreach ($producedResponses as $response) {
+                $unwrappedResponse = $response->getValue();
+                foreach ($unwrappedResponse as $status => $content) {
+                    $unwrappedResponses[$status] = $content;
+                }
+            }
+        }
+
+
+        $apiParameters = [];
+        $responses     = $produces?$unwrappedResponses:[];
+
+
+        /** @var OpenAPIService */
+        $api = yield Container::create(OpenAPIService::class);
+
+        foreach ($parameters as $parameter) {
+            $type = ReflectionTypeManager::unwrap($parameter);
+            if (!$type) {
+                continue;
+            }
+
+            /** @var Summary|null */
+            $summary = (yield Summary::findByParameter($parameter));
+
+            /** @var array{type:string} */
+            $schema = ["type" => ReflectionTypeManager::unwrap($parameter)->getName()];
+            
+            /** @var Example|null */
+            $example = (yield Example::findByParameter($parameter));
+
+            /** @var PathParam|null */
+            $pathParam = yield PathParam::findByParameter($parameter);
+
+            /** @var Param|null */
+            $param = yield Param::findByParameter($parameter);
+
+            /** @var RequestQuery|null */
+            $query = yield RequestQuery::findByParameter($parameter);
+            
+            /** @var RequestHeader|null */
+            $header = yield RequestHeader::findByParameter($parameter);
+
+            /** @var RequestBody|null */
+            $body = yield RequestBody::findByParameter($parameter); //todo: expose body
+                
+            if ($query) {
+                $key = $query->getName();
+                if ('' === $key) {
+                    $key = $parameter->getName();
+                }
+
+                $apiParameters = [
+                    ...$apiParameters,
+                    ...$api->createParameter(
+                        name: $key,
+                        in: 'query',
+                        description: $summary?$summary->getValue():(new Summary(value:''))->getValue(),
+                        required: false,
+                        schema: $schema,
+                        examples: $example?$example->getValue():[],
+                    ),
+                ];
+            }
+            
+            if ($param || $pathParam) {
+                $apiParameters = [
+                    ...$apiParameters,
+                    ...$api->createParameter(
+                        name: $parameter->getName(),
+                        in: 'path',
+                        description: $summary?$summary->getValue():(new Summary(value:''))->getValue(),
+                        required: true,
+                        schema: $schema,
+                        examples: $example?$example->getValue():[],
+                    ),
+                ];
+            }
+
+            if ($header) {
+                $apiParameters = [
+                    ...$apiParameters,
+                    ...$api->createParameter(
+                        name: $header->getKey(),
+                        in: 'header',
+                        description: $summary?$summary->getValue():(new Summary(value:''))->getValue(),
+                        required: false,
+                        schema: $schema,
+                        examples: $example?$example->getValue():[],
+                    ),
+                ];
+            }
+        }
+
+        /** @var Summary */
+        $summary = (yield Summary::findByFunction($reflection)) ?? new Summary('');
+
+        $api->setPath(
+            path: $path,
+            pathContent: [
+                ...$api->createPathContent(
+                    method: $method,
+                    operationID: \sha1("$method:$path:".\sha1(\json_encode($apiParameters))),
+                    summary: $summary->getValue(),
+                    parameters: $apiParameters,
+                    responses: $responses,
+                ),
+            ],
+        );
     }
 
     /**
