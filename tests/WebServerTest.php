@@ -29,9 +29,9 @@ class WebServerTest extends TestCase {
             yield Container::run(function(
                 OpenAPIService $api
             ) use ($http) {
-                // yield from $this->testGet($http);
-                // yield from $this->testGetWithParams($http);
-                // yield from $this->testFilters($http);
+                yield from $this->testGet($http);
+                yield from $this->testGetWithParams($http);
+                yield from $this->testFilters($http);
                 yield from $this->testController($http);
                 yield from $this->testOpenAPI($http, $api);
             });
