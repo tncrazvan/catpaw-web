@@ -200,25 +200,8 @@ function cached(HttpConfiguration $config, Response $response): Response {
     return $response;
 }
 
-/**
- * Undocumented function
- *
- * @param  string $path    http path of the property
- * @param  mixed  &$value
- * @param  mixed  $cascade whenever the lazy state is updated through http, this pointer will also be updated.
- * @return Lazy
- */
-function lazyValue(string $path, mixed &$value):Lazy {
-    $entry = new Lazy(
-        id: $path,
-        value: $value,
-    );
-    $entry->publish();
-    return $entry;
-}
 
-
-function lazy(callable $path, array &$bind, array $value):array {
+function lazy(callable $id, array &$bind, array $value):array {
     $state = [];
 
     foreach ($value as $key => $value) {
@@ -226,7 +209,16 @@ function lazy(callable $path, array &$bind, array $value):array {
             if (!isset($bind[$key])) {
                 $bind[$key] = $value;
             }
-            $lazyValue = lazyValue($path($key), $bind[$key]);
+            $lazyValue = new Lazy(
+                id: $id($key),
+                get: function() use (&$bind, $key) {
+                    return $bind[$key];
+                },
+                set: function($value) use (&$bind, $key) {
+                    $bind[$key] = $value;
+                }
+            );
+            $lazyValue->publish();
             $lazyValue->bind($bind[$key]);
             $state[$key] = $lazyValue->build();
             continue;
@@ -234,7 +226,7 @@ function lazy(callable $path, array &$bind, array $value):array {
         if (!isset($bind[$key])) {
             $bind[$key] = [];
         }
-        $state[$key] = lazy(fn($key2) => $path("$key:$key2"), $bind[$key], $value);
+        $state[$key] = lazy(fn($key2) => $id("$key:$key2"), $bind[$key], $value);
     }
 
     return $state;

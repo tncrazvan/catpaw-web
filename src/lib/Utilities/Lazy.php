@@ -18,17 +18,18 @@ class Lazy {
     private $lastCascade    = null;
     public function __construct(
         private string $id,
-        private mixed &$value,
+        private Closure $get,
+        private Closure $set,
     ) {
     }
 
     public function setValue(mixed &$value):self {
-        $this->value = $value;
+        ($this->set)($value);
         return $this;
     }
 
     public function &getValue():mixed {
-        return $this->value;
+        return ($this->get)();
     }
     public function getOnUpdate():Closure|false {
         return $this->onUpdate;
