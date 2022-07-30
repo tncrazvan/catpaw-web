@@ -10,11 +10,13 @@ use function Amp\File\getSize;
 use function Amp\File\isDirectory;
 use function Amp\File\openFile;
 use Amp\Http\Server\Request;
+
 use Amp\Http\Server\Response;
 use Amp\Http\Status;
 use Amp\LazyPromise;
 use Amp\Producer;
 use Amp\Promise;
+use function CatPaw\isAssoc;
 use CatPaw\Web\Attributes\RequestHeader;
 use CatPaw\Web\Exceptions\InvalidByteRangeQueryException;
 use CatPaw\Web\Interfaces\ByteRangeWriterInterface;
@@ -201,11 +203,20 @@ function cached(HttpConfiguration $config, Response $response): Response {
 }
 
 
+
 function lazy(callable $id, array &$props):array {
     $state = [];
 
     foreach ($props as $key => $defaultValue) {
-        if (\is_string($defaultValue) || \is_numeric($defaultValue) || \is_bool($defaultValue)) {
+        if (
+            \is_string($defaultValue) 
+            || \is_numeric($defaultValue) 
+            || \is_bool($defaultValue)
+            || (
+                is_array($defaultValue) 
+                && !isAssoc($defaultValue)
+            )
+        ) {
             $lazyValue = new Lazy(
                 id: $id($key),
                 get: function() use (&$props, $key) {
