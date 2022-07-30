@@ -203,14 +203,15 @@ function cached(HttpConfiguration $config, Response $response): Response {
 
 function lazy(callable $id, array &$props):array {
     $state = [];
+
     foreach ($props as $key => $defaultValue) {
         if (\is_string($defaultValue) || \is_numeric($defaultValue) || \is_bool($defaultValue)) {
             $lazyValue = new Lazy(
                 id: $id($key),
-                get: function() use (&$props, $key):mixed {
+                get: function() use (&$props, $key) {
                     return $props[$key];
                 },
-                set: function(mixed $newValue) use (&$props, $key) {
+                set: function($newValue) use (&$props, $key, $defaultValue, $id) {
                     $props[$key] = $newValue;
                 }
             );
@@ -219,7 +220,8 @@ function lazy(callable $id, array &$props):array {
             $state[$key] = $lazyValue->build();
             continue;
         }
-        $state[$key] = lazy(fn(string $key2):string => $id("$key:$key2"), $props[$key]);
+        $state[$key] = lazy(fn($key2) => $id("$key:$key2"), $props[$key]);
     }
+
     return $state;
 }

@@ -8,7 +8,6 @@ use CatPaw\Web\Attributes\Produces;
 
 use CatPaw\Web\Attributes\Session;
 use CatPaw\Web\Attributes\SessionID;
-
 use function CatPaw\Web\lazy;
 
 use ReflectionClass;
@@ -50,7 +49,7 @@ abstract class SPA {
             ...$session,
         ];
 
-        $this->paths[$key] = lazy(fn(string $id):string => "$key:$id", $session);
+        $this->paths[$key] = lazy(fn(string $id) => "$key:$id", $session);
 
         return $this->paths[$key];
     }

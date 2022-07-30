@@ -11,10 +11,11 @@ use CatPaw\Web\Attributes\RequestBody;
 use Closure;
 
 class Lazy {
-    private static array $list      = [];
-    private static bool $routed     = false;
-    private Closure|false $onUpdate = false;
-    private bool $published         = false;
+    private static array $list  = [];
+    private static bool $routed = false;
+    private Closure|false $onUpdate;
+    private bool $published = false;
+    private $lastCascade    = null;
     public function __construct(
         private string $id,
         private Closure $get,
@@ -22,7 +23,7 @@ class Lazy {
     ) {
     }
 
-    public function setValue(mixed $value):self {
+    public function setValue(mixed &$value):self {
         ($this->set)($value);
         return $this;
     }
@@ -38,7 +39,7 @@ class Lazy {
         return self::$list[$id] ?? false;
     }
     
-    public static function route():void {
+    public static function route() {
         if (self::$routed) {
             return;
         }
@@ -69,10 +70,9 @@ class Lazy {
                 if (!$lazy) {
                     return new Response(Status::UNAUTHORIZED);
                 }
+                $lazy->setValue($payload['!lazy']);
                 
-                $lazy->setValue($payload['!lazy'] ?? null);
-                
-                if ($onUpdate = $lazy->getOnUpdate()) {
+                if ($onUpdate = $lazy->getOnUpdate() ?? false) {
                     ($onUpdate)($lazy->getValue());
                 }
             }
@@ -89,8 +89,16 @@ class Lazy {
         return $this;
     }
 
-    public function bind(array &$target):self {
-        $this->onUpdate = function(mixed $value) use (&$target):void {
+    public function bind(&$target):self {
+        if (null !== $this->lastCascade && $this->lastCascade === $target) {
+            return $this;
+        }
+
+        if ($target) {
+            $this->value = $target;
+        }
+
+        $this->onUpdate = function($value) use (&$target) {
             $target     = $value;
         };
         return $this;
