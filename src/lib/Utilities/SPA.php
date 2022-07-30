@@ -8,6 +8,7 @@ use CatPaw\Web\Attributes\Produces;
 
 use CatPaw\Web\Attributes\Session;
 use CatPaw\Web\Attributes\SessionID;
+
 use function CatPaw\Web\lazy;
 
 use ReflectionClass;
@@ -34,7 +35,7 @@ abstract class SPA {
         if (!$this->initialized) {
             /** @var Path */
             $path              = yield Path::findByClass(new ReflectionClass(static::class));
-            $this->SPAPath     = $path->getValue();
+            $this->SPAPath     = str_replace('/', ';', $path->getValue());
             $this->initialized = true;
         }
 
@@ -44,7 +45,12 @@ abstract class SPA {
             return $this->paths[$key];
         }
 
-        $this->paths[$key] = lazy(fn(string $id) => sha1("$key:$id"), $session, $this->state);
+        $session = [
+            ...$this->state,
+            ...$session,
+        ];
+
+        $this->paths[$key] = lazy(fn(string $id):string => "$key:$id", $session);
 
         return $this->paths[$key];
     }

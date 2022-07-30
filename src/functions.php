@@ -201,33 +201,25 @@ function cached(HttpConfiguration $config, Response $response): Response {
 }
 
 
-function lazy(callable $id, array &$bind, array $value):array {
+function lazy(callable $id, array &$props):array {
     $state = [];
-
-    foreach ($value as $key => $value) {
-        if (\is_string($value) || \is_numeric($value) || \is_bool($value)) {
-            if (!isset($bind[$key])) {
-                $bind[$key] = $value;
-            }
+    foreach ($props as $key => $defaultValue) {
+        if (\is_string($defaultValue) || \is_numeric($defaultValue) || \is_bool($defaultValue)) {
             $lazyValue = new Lazy(
                 id: $id($key),
-                get: function() use (&$bind, $key) {
-                    return $bind[$key];
+                get: function() use (&$props, $key):mixed {
+                    return $props[$key];
                 },
-                set: function($value) use (&$bind, $key) {
-                    $bind[$key] = $value;
+                set: function(mixed $newValue) use (&$props, $key) {
+                    $props[$key] = $newValue;
                 }
             );
             $lazyValue->publish();
-            $lazyValue->bind($bind[$key]);
+            $lazyValue->bind($props[$key]);
             $state[$key] = $lazyValue->build();
             continue;
         }
-        if (!isset($bind[$key])) {
-            $bind[$key] = [];
-        }
-        $state[$key] = lazy(fn($key2) => $id("$key:$key2"), $bind[$key], $value);
+        $state[$key] = lazy(fn(string $key2):string => $id("$key:$key2"), $props[$key]);
     }
-
     return $state;
 }

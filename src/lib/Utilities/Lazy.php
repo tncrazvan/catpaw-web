@@ -11,11 +11,10 @@ use CatPaw\Web\Attributes\RequestBody;
 use Closure;
 
 class Lazy {
-    private static array $list  = [];
-    private static bool $routed = false;
-    private Closure|false $onUpdate;
-    private bool $published = false;
-    private $lastCascade    = null;
+    private static array $list      = [];
+    private static bool $routed     = false;
+    private Closure|false $onUpdate = false;
+    private bool $published         = false;
     public function __construct(
         private string $id,
         private Closure $get,
@@ -23,23 +22,23 @@ class Lazy {
     ) {
     }
 
-    public function setValue(mixed &$value):self {
+    public function setValue(mixed $value):self {
         ($this->set)($value);
         return $this;
     }
 
-    public function &getValue():mixed {
+    public function getValue():mixed {
         return ($this->get)();
     }
     public function getOnUpdate():Closure|false {
         return $this->onUpdate;
     }
 
-    private static function findByID(string $id):false|Lazy {
+    public static function findByID(string $id):false|Lazy {
         return self::$list[$id] ?? false;
     }
     
-    public static function route() {
+    public static function route():void {
         if (self::$routed) {
             return;
         }
@@ -70,9 +69,10 @@ class Lazy {
                 if (!$lazy) {
                     return new Response(Status::UNAUTHORIZED);
                 }
-                $lazy->setValue($payload['!lazy']);
                 
-                if ($onUpdate = $lazy->getOnUpdate() ?? false) {
+                $lazy->setValue($payload['!lazy'] ?? null);
+                
+                if ($onUpdate = $lazy->getOnUpdate()) {
                     ($onUpdate)($lazy->getValue());
                 }
             }
@@ -89,16 +89,8 @@ class Lazy {
         return $this;
     }
 
-    public function bind(&$target):self {
-        if (null !== $this->lastCascade && $this->lastCascade === $target) {
-            return $this;
-        }
-
-        if ($target) {
-            $this->value = $target;
-        }
-
-        $this->onUpdate = function($value) use (&$target) {
+    public function bind(array &$target):self {
+        $this->onUpdate = function(mixed $value) use (&$target):void {
             $target     = $value;
         };
         return $this;
