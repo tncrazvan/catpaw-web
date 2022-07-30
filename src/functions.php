@@ -232,7 +232,7 @@ function lazy(callable $id, array &$props):array {
             $state[$key] = $lazyValue->build();
             continue;
         }
-        $state[$key] = lazy(fn($key2) => $id("$key:$key2"), $props[$key]);
+        $state[$key] = lazy(fn($key2) => $id("$key.$key2"), $props[$key]);
     }
 
     return $state;

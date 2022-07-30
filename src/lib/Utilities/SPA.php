@@ -34,7 +34,7 @@ abstract class SPA {
         if (!$this->initialized) {
             /** @var Path */
             $path              = yield Path::findByClass(new ReflectionClass(static::class));
-            $this->SPAPath     = str_replace('/', ';', $path->getValue());
+            $this->SPAPath     = str_replace('/', ':', $path->getValue());
             $this->initialized = true;
         }
 
@@ -49,7 +49,7 @@ abstract class SPA {
             ...$session,
         ];
 
-        $this->paths[$key] = lazy(fn(string $id) => "$key:$id", $session);
+        $this->paths[$key] = lazy(fn(string $id) => "$key.$id", $session);
 
         return $this->paths[$key];
     }
