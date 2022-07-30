@@ -209,7 +209,8 @@ function lazy(callable $id, array &$props):array {
 
     foreach ($props as $key => $defaultValue) {
         if (
-            \is_string($defaultValue) 
+            null === $defaultValue
+            || \is_string($defaultValue) 
             || \is_numeric($defaultValue) 
             || \is_bool($defaultValue)
             || (
@@ -222,7 +223,7 @@ function lazy(callable $id, array &$props):array {
                 get: function() use (&$props, $key) {
                     return $props[$key];
                 },
-                set: function($newValue) use (&$props, $key, $defaultValue, $id) {
+                set: function($newValue) use (&$props, $key) {
                     $props[$key] = $newValue;
                 }
             );
