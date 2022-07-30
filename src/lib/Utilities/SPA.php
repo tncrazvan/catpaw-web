@@ -38,7 +38,7 @@ abstract class SPA {
             $this->initialized = true;
         }
 
-        $key = "$this->SPAPath:lazy:$sessionID";
+        $key = "$sessionID:$this->SPAPath";
 
         if (isset($this->paths[$key])) {
             return $this->paths[$key];
